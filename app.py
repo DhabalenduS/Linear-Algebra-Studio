@@ -1,14 +1,14 @@
 import streamlit as st
 from modules import Unit1_systems
 
-# --- Page Configuration (No icon passed) ---
+# --- Page Configuration ---
 st.set_page_config(
     page_title="Linear Algebra Studio",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Custom Styling ---
+# --- Custom Styling for Cards and Headers ---
 st.markdown("""
     <style>
     .centered-header {
@@ -24,32 +24,6 @@ st.markdown("""
         color: #4B5563;
         font-size: 1.25rem;
         margin-bottom: 40px;
-    }
-    .unit-card {
-        border: 2px solid #E5E7EB;
-        border-radius: 12px;
-        padding: 30px 20px;
-        text-align: center;
-        background-color: #F9FAFB;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-        margin-bottom: 20px;
-        cursor: pointer;
-    }
-    .unit-card:hover {
-        border-color: #3B82F6;
-        background-color: #F0Fdf4;
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.15);
-    }
-    .unit-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1F2937;
-        margin-bottom: 8px;
-    }
-    .unit-desc {
-        font-size: 0.95rem;
-        color: #6B7280;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -72,34 +46,31 @@ if st.session_state.active_unit != "Home":
 # --- Unit Hub Dashboard ---
 if st.session_state.active_unit == "Home":
     st.markdown("### 📚 Course Units Dashboard")
-    st.write("Click on any unit box below to enter its interactive workspace:")
+    st.write("Select a unit below to enter its interactive workspace:")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("### Unit-I\nSystems of Linear Equations & Matrices", use_container_width=True, key="btn_u1"):
+        if st.button("📦 **Unit-I**\n\nSystems of Linear Equations & Matrices", use_container_width=True, key="u1"):
             st.session_state.active_unit = "Unit-I"
             st.rerun()
-            
-        if st.button("### Unit-IV\nInner Product Spaces & Orthogonality", use_container_width=True, key="btn_u4"):
+        if st.button("📦 **Unit-IV**\n\nInner Product Spaces & Orthogonality", use_container_width=True, key="u4"):
             st.session_state.active_unit = "Unit-IV"
             st.rerun()
 
     with col2:
-        if st.button("### Unit-II\nVector Spaces & Subspaces", use_container_width=True, key="btn_u2"):
+        if st.button("📦 **Unit-II**\n\nVector Spaces & Subspaces", use_container_width=True, key="u2"):
             st.session_state.active_unit = "Unit-II"
             st.rerun()
-            
-        if st.button("### Unit-V\nEigenvalues & Eigenvectors", use_container_width=True, key="btn_u5"):
+        if st.button("📦 **Unit-V**\n\nEigenvalues & Eigenvectors", use_container_width=True, key="u5"):
             st.session_state.active_unit = "Unit-V"
             st.rerun()
 
     with col3:
-        if st.button("### Unit-III\nLinear Transformations", use_container_width=True, key="btn_u3"):
+        if st.button("📦 **Unit-III**\n\nLinear Transformations", use_container_width=True, key="u3"):
             st.session_state.active_unit = "Unit-III"
             st.rerun()
-            
-        if st.button("### Unit-VI\nReal-World Applications", use_container_width=True, key="btn_u6"):
+        if st.button("📦 **Unit-VI**\n\nReal-World Applications", use_container_width=True, key="u6"):
             st.session_state.active_unit = "Unit-VI"
             st.rerun()
 
