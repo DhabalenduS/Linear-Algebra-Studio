@@ -11,7 +11,6 @@ st.markdown("Practice row operations on matrices securely via the web.")
 
 # --- Helper Functions ---
 def format_matrix_display(mat):
-    """Converts a numpy matrix of fractions/numbers into a clean list of lists for display."""
     cleaned_rows = []
     for row in mat:
         cleaned_row = []
@@ -95,7 +94,7 @@ if not st.session_state.initialized:
     row_inputs = []
     for i in range(rows):
         default_val = default_rows[i] if i < len(default_rows) else "0 " * cols
-        val = st.text_input(f"Row {i+1}", value=default_val.strip())
+        val = st.text_input(f"Row {i+1}", value=default_val.strip(), key=f"row_input_{i}")
         row_inputs.append(val)
 
     if st.button("Initialize Matrix"):
@@ -120,33 +119,38 @@ if not st.session_state.initialized:
 else:
     st.subheader("Current Matrix State")
     
-    # Display current matrix nicely in a table/dataframe style
     current_display = format_matrix_display(st.session_state.current_matrix)
     st.table(current_display)
 
     st.markdown("---")
     st.markdown("**Examples of Operations:** `R1 <-> R2` (Swap) | `R1 -> 3*R1` (Scaling) | `R2 -> R2 - 3*R1` (Replacement)")
     
-    op_input = st.text_input("Enter row operation:", placeholder="e.g., R2 -> R2 - 3*R1")
+    # Using a callback-safe form or dynamic clearing for the operation input
+    op_input = st.text_input("Enter row operation:", placeholder="e.g., R2 -> R2 - 3*R1", key="current_op_input")
 
     col1, col2 = st.columns(2)
     
     with col1:
         if st.button("Apply Operation"):
             try:
-                updated_matrix = perform_row_operation(st.session_state.current_matrix, op_input)
-                
-                # Log history
-                st.session_state.history.append({
-                    "step": st.session_state.step_count,
-                    "operation": op_input,
-                    "matrix": updated_matrix.copy()
-                })
+                if not op_input.strip():
+                    st.warning("Please enter a valid row operation.")
+                else:
+                    updated_matrix = perform_row_operation(st.session_state.current_matrix, op_input)
+                    
+                    st.session_state.history.append({
+                        "step": st.session_state.step_count,
+                        "operation": op_input,
+                        "matrix": updated_matrix.copy()
+                    })
 
-                st.session_state.current_matrix = updated_matrix
-                st.session_state.step_count += 1
-                st.success(f"Successfully applied: {op_input}")
-                st.rerun()
+                    st.session_state.current_matrix = updated_matrix
+                    st.session_state.step_count += 1
+                    
+                    # Clear the input box state cleanly
+                    st.session_state["current_op_input"] = ""
+                    st.success(f"Successfully applied: {op_input}")
+                    st.rerun()
             except ValueError as ve:
                 st.warning(f"WARNING: {ve}")
             except Exception as e:
