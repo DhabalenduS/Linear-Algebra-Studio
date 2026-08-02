@@ -1,2 +1,2 @@
-# Linear-Algebra-Tools-
+# Linear-Algebra-Studio
 Collection of modular Linear Algebra Tools  
