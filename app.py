@@ -7,8 +7,7 @@ from fractions import Fraction
 st.set_page_config(page_title="Interactive Row-Operation Interface", layout="centered")
 
 st.title("Interactive Elementary Row Operation Tool")
-st.markdown("Practice row operations on matrices securely via the web.")
-
+st.markdown("Practice Row Operations")
 # --- Helper Functions ---
 def format_matrix_display(mat):
     cleaned_rows = []
