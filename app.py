@@ -4,10 +4,10 @@ import re
 from fractions import Fraction
 
 # --- Page Config ---
-st.set_page_config(page_title="Interactive Row-Operation Interface", layout="centered")
+st.set_page_config(page_title="Matrix Row Operations", layout="centered")
 
-st.title("Interactive Elementary Row Operation Tool")
-st.markdown("Practice Row Operations")
+st.title("Interactive Matrix Row Operations")
+#st.markdown("Practice Row Operations")
 # --- Helper Functions ---
 def format_matrix_display(mat):
     cleaned_rows = []
