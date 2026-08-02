@@ -34,9 +34,9 @@ st.markdown("""
     .author-name {
         text-align: center;
         color: #1E3A8A;
-        font-size: 1.35rem;
+        font-size: 1.75rem; /* Increased size for greater prominence */
         font-weight: 700;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
     .author-credentials {
         text-align: center;
