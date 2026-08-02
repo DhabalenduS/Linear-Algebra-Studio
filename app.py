@@ -48,18 +48,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Session State & Query Parameter Management ---
-if 'active_unit' not in st.session_state:
-    st.session_state.active_unit = "Home"
-
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0
-
+# --- Query Parameter & Session State Synchronization ---
 query_params = st.query_params
 
-# Handle Unit Routing via URL
+# Parse Unit from URL if present, otherwise default to Home
+target_unit = "Home"
 if "unit" in query_params:
-    unit_val = query_params["unit"]
+    unit_val = str(query_params["unit"])
     mapping = {
         "1": "Unit-I",
         "2": "Unit-II",
@@ -69,14 +64,30 @@ if "unit" in query_params:
         "6": "Unit-VI"
     }
     if unit_val in mapping:
-        st.session_state.active_unit = mapping[unit_val]
+        target_unit = mapping[unit_val]
 
-# Handle Sub-Tab Routing via URL if present
+# Parse Tab from URL if present, otherwise default to 0
+target_tab = 0
 if "tab" in query_params:
     try:
-        st.session_state.active_tab = int(query_params["tab"])
+        target_tab = int(query_params["tab"])
     except ValueError:
-        st.session_state.active_tab = 0
+        target_tab = 0
+
+# Initialize or update session state based on URL parameters
+if 'active_unit' not in st.session_state:
+    st.session_state.active_unit = target_unit
+else:
+    # If the URL specifies a unit, override session state to match the deep link
+    if "unit" in query_params:
+        st.session_state.active_unit = target_unit
+
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = target_tab
+else:
+    # If the URL specifies a tab, override session state to match the deep link
+    if "tab" in query_params:
+        st.session_state.active_tab = target_tab
 
 # --- Header Section ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
