@@ -34,7 +34,7 @@ st.markdown("""
     .author-name {
         text-align: center;
         color: #1E3A8A;
-        font-size: 1.75rem; /* Increased size for greater prominence */
+        font-size: 1.75rem;
         font-weight: 700;
         margin-bottom: 4px;
     }
@@ -48,9 +48,35 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Session State Management ---
+# --- Session State & Query Parameter Management ---
 if 'active_unit' not in st.session_state:
     st.session_state.active_unit = "Home"
+
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
+
+query_params = st.query_params
+
+# Handle Unit Routing via URL
+if "unit" in query_params:
+    unit_val = query_params["unit"]
+    mapping = {
+        "1": "Unit-I",
+        "2": "Unit-II",
+        "3": "Unit-III",
+        "4": "Unit-IV",
+        "5": "Unit-V",
+        "6": "Unit-VI"
+    }
+    if unit_val in mapping:
+        st.session_state.active_unit = mapping[unit_val]
+
+# Handle Sub-Tab Routing via URL if present
+if "tab" in query_params:
+    try:
+        st.session_state.active_tab = int(query_params["tab"])
+    except ValueError:
+        st.session_state.active_tab = 0
 
 # --- Header Section ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
@@ -63,6 +89,8 @@ st.markdown('<p class="author-credentials">PhD(Math), IIT Delhi, India | 10 Year
 if st.session_state.active_unit != "Home":
     if st.button("⬅️ Back to Course Units Dashboard", type="secondary"):
         st.session_state.active_unit = "Home"
+        st.session_state.active_tab = 0
+        st.query_params.clear()
         st.rerun()
     st.divider()
 
