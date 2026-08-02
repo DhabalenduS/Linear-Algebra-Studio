@@ -125,8 +125,7 @@ else:
     st.markdown("---")
     st.markdown("**Examples of Operations:** `R1 <-> R2` (Swap) | `R1 -> 3*R1` (Scaling) | `R2 -> R2 - 3*R1` (Replacement)")
     
-    # Using a callback-safe form or dynamic clearing for the operation input
-    op_input = st.text_input("Enter row operation:", placeholder="e.g., R2 -> R2 - 3*R1", key="current_op_input")
+    op_input = st.text_input("Enter row operation:", placeholder="e.g., R2 -> R2 - 3*R1")
 
     col1, col2 = st.columns(2)
     
@@ -147,8 +146,6 @@ else:
                     st.session_state.current_matrix = updated_matrix
                     st.session_state.step_count += 1
                     
-                    # Clear the input box state cleanly
-                    st.session_state["current_op_input"] = ""
                     st.success(f"Successfully applied: {op_input}")
                     st.rerun()
             except ValueError as ve:
