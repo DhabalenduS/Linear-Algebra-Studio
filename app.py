@@ -25,10 +25,23 @@ st.markdown("""
         font-size: 1.25rem;
         margin-bottom: 5px;
     }
-    .author-credentials {
+    .author-by {
         text-align: center;
         color: #6B7280;
-        font-size: 0.95rem;
+        font-size: 1rem;
+        margin-bottom: 0px;
+    }
+    .author-name {
+        text-align: center;
+        color: #1E3A8A;
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .author-credentials {
+        text-align: center;
+        color: #4B5563;
+        font-size: 0.9rem;
         font-weight: 500;
         margin-bottom: 40px;
     }
@@ -42,7 +55,9 @@ if 'active_unit' not in st.session_state:
 # --- Header Section ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="centered-subheader">Interactive workspace for UG/PG Students</p>', unsafe_allow_html=True)
-st.markdown('<p class="author-credentials">by Dr. Dhabalendu Samanta | PhD(Math), IIT Delhi, India | 10 Years Experience @ STMicroelectronics Pvt Ltd | 5 Patents (USPTO) | 16 Years Teaching Exp. | Multiple Single Author SCIE Q2 Pure Math Publications</p>', unsafe_allow_html=True)
+st.markdown('<p class="author-by">by</p>', unsafe_allow_html=True)
+st.markdown('<p class="author-name">Dr. Dhabalendu Samanta</p>', unsafe_allow_html=True)
+st.markdown('<p class="author-credentials">PhD(Math), IIT Delhi, India | 10 Years Experience @ STMicroelectronics Pvt Ltd | 5 Patents (USPTO) | 16 Years Teaching Exp. | Multiple Single Author SCIE Q2 Pure Math Publications</p>', unsafe_allow_html=True)
 
 # --- Navigation Check ---
 if st.session_state.active_unit != "Home":
