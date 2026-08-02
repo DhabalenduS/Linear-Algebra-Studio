@@ -9,33 +9,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 # --- Custom Executive Styling ---
 st.markdown("""
     <style>
     .main-title {
-        font-size: 2.2rem;
-        font-weight: 700;
+        font-size: 2.8rem !important;
+        font-weight: 800;
         color: #1E3A8A;
         margin-bottom: 0rem;
     }
     .sub-text {
         color: #4B5563;
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         margin-bottom: 2rem;
-    }
-    .card {
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        border: 1px solid #E5E7EB;
-        background-color: #F9FAFB;
-        margin-bottom: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # --- Helper Functions ---
 def format_matrix_latex(mat):
-    """Converts a numpy matrix into a clean LaTeX bmatrix string using fractions."""
     latex_rows = []
     for row in mat:
         row_elems = []
@@ -93,7 +86,7 @@ def perform_row_operation(A, op_str):
 
     return new_A
 
-# --- Main Application Layout ---
+# --- Main Application Header ---
 st.markdown('<p class="main-title">Interactive Matrix Row Operations</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-text">Professional workspace for linear algebra reduction and elementary row transformations.</p>', unsafe_allow_html=True)
 
@@ -126,36 +119,35 @@ with st.sidebar:
         st.session_state.original_matrix = None
         st.rerun()
 
-# --- Step 1: Input Matrix Entries ---
+# --- Step 1: Input Matrix Entries (Gatekeeper before main UI) ---
 if st.session_state.original_matrix is None:
-    with st.container():
-        st.markdown("#### Step 1: Define Matrix Entries")
-        st.info("Enter space-separated numerical values for each row below.")
-        
-        entered_rows = []
-        valid_input = True
-        
-        for i in range(rows):
-            row_input = st.text_input(f"Row {i+1}", value=" ".join(["1" if j==i else "0" for j in range(cols)]), key=f"row_{i}")
-            try:
-                row_vals = [Fraction(x) for x in row_input.strip().split()]
-                if len(row_vals) != cols:
-                    valid_input = False
-                entered_rows.append(row_vals)
-            except:
+    st.markdown("#### Step 1: Define Matrix Entries")
+    st.info(f"Enter space-separated numerical values for each row ({cols} values per row).")
+    
+    entered_rows = []
+    valid_input = True
+    
+    for i in range(rows):
+        row_input = st.text_input(f"Row {i+1}", value=" ".join(["1" if j==i else "0" for j in range(cols)]), key=f"row_{i}")
+        try:
+            row_vals = [Fraction(x) for x in row_input.strip().split()]
+            if len(row_vals) != cols:
                 valid_input = False
-                
-        if st.button("Initialize Matrix", type="primary"):
-            if valid_input:
-                mat = np.array(entered_rows, dtype=object)
-                st.session_state.original_matrix = mat.copy()
-                st.session_state.current_matrix = mat.copy()
-                st.session_state.matrix_history = []
-                st.rerun()
-            else:
-                st.error(f"Ensure every row contains exactly {cols} valid numbers/fractions separated by spaces.")
+            entered_rows.append(row_vals)
+        except:
+            valid_input = False
+            
+    if st.button("Initialize Matrix & Start Studio", type="primary"):
+        if valid_input:
+            mat = np.array(entered_rows, dtype=object)
+            st.session_state.original_matrix = mat.copy()
+            st.session_state.current_matrix = mat.copy()
+            st.session_state.matrix_history = []
+            st.rerun()
+        else:
+            st.error(f"Ensure every row contains exactly {cols} valid numbers/fractions separated by spaces.")
 else:
-    # --- Step 2: Interactive Workspace & Dashboard ---
+    # --- Step 2: Interactive Workspace & Dashboard (Shown ONLY after initialization) ---
     col_left, col_right = st.columns([1.2, 1])
     
     with col_left:
@@ -191,7 +183,7 @@ else:
                 st.warning("No operations to undo.")
 
     with col_right:
-        st.markdown("#### 📊 Current Active Matrix")
+        st.markdown("#### 📊 Current Matrix")
         st.latex(format_matrix_latex(st.session_state.current_matrix))
 
     # --- Step 3: Execution Audit Trail ---
