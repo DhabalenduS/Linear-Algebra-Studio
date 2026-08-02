@@ -6,10 +6,9 @@ from fractions import Fraction
 # --- Page Configuration ---
 st.set_page_config(
     page_title="Matrix Row Operations Studio",
-    page_layout="wide",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
-
 # --- Custom Executive Styling ---
 st.markdown("""
     <style>
