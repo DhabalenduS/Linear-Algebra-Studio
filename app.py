@@ -4,7 +4,6 @@ from modules import Unit1_systems
 # --- Page Configuration ---
 st.set_page_config(
     page_title="Linear Algebra Studio",
-    page_icon="📐",
     layout="wide",
     initial_sidebar_state="expanded"
 )
