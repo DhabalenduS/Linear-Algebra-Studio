@@ -64,15 +64,32 @@ def perform_row_operation(A, op_str):
 def render():
     st.markdown("### Unit-I: Systems of Linear Equations")
     
-    # Sub-tabs for Unit I
-    sub_tab_1, sub_tab_2, sub_tab_3, sub_tab_4 = st.tabs([
+    # Define sub-topics for URL mapping and selection
+    tab_names = [
         "Row Operations & RREF", 
         "Matrix Arithmetic & Inverses", 
         "Gaussian Elimination & LU", 
         "Rank & Solutions"
-    ])
+    ]
     
-    with sub_tab_1:
+    # Retrieve active tab index safely from session state
+    default_tab_idx = getattr(st.session_state, "active_tab", 0)
+    if not (0 <= default_tab_idx < len(tab_names)):
+        default_tab_idx = 0
+
+    # Horizontal radio group acts as tabs for deep-link compatibility
+    selected_tab = st.radio(
+        "Select Sub-Topic", 
+        tab_names, 
+        index=default_tab_idx, 
+        horizontal=True, 
+        label_visibility="collapsed",
+        key="u1_sub_tabs"
+    )
+    
+    st.divider()
+    
+    if selected_tab == "Row Operations & RREF":
         st.markdown("#### Interactive Matrix Row Operations")
         st.markdown("Professional workspace for linear algebra reduction and elementary row transformations.")
 
@@ -85,7 +102,6 @@ def render():
             st.session_state.original_matrix = None
 
         # Sidebar controls for Matrix setup inside Unit 1
-        st.markdown("---")
         col_set1, col_set2 = st.columns(2)
         with col_set1:
             rows = st.number_input("Rows", min_value=2, max_value=6, value=4, step=1, key="u1_rows")
@@ -175,14 +191,14 @@ def render():
                     with st.expander(f"Step {idx+1}: {item['operation']}"):
                         st.latex(format_matrix_latex(item['matrix']))
 
-    with sub_tab_2:
+    elif selected_tab == "Matrix Arithmetic & Inverses":
         st.subheader("Matrix Arithmetic & Inverses")
         st.info("Module under development for Matrix Multiplication and Inverses.")
 
-    with sub_tab_3:
+    elif selected_tab == "Gaussian Elimination & LU":
         st.subheader("Gaussian Elimination & LU Decomposition")
         st.info("Module under development for Matrix Factorization.")
 
-    with sub_tab_4:
+    elif selected_tab == "Rank & Solutions":
         st.subheader("Rank & System Solutions")
         st.info("Module under development for consistency checks and solution sets.")
