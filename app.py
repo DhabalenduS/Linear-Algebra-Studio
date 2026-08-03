@@ -48,42 +48,23 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Query Parameter & Session State Synchronization ---
+# --- Query Parameters Sync ---
 query_params = st.query_params
 
-# Parse Unit from URL if present
 target_unit = "Home"
 if "unit" in query_params:
     unit_val = str(query_params["unit"])
     mapping = {
-        "1": "Unit-I",
-        "2": "Unit-II",
-        "3": "Unit-III",
-        "4": "Unit-IV",
-        "5": "Unit-V",
-        "6": "Unit-VI"
+        "1": "Unit-I", "2": "Unit-II", "3": "Unit-III",
+        "4": "Unit-IV", "5": "Unit-V", "6": "Unit-VI"
     }
     if unit_val in mapping:
         target_unit = mapping[unit_val]
 
-# Parse Tab from URL if present
-target_tab = 0
-if "tab" in query_params:
-    try:
-        target_tab = int(query_params["tab"])
-    except ValueError:
-        target_tab = 0
-
-# Synchronize session state with URL deep-links
 if "unit" in query_params:
     st.session_state.active_unit = target_unit
 elif 'active_unit' not in st.session_state:
     st.session_state.active_unit = "Home"
-
-if "tab" in query_params:
-    st.session_state.active_tab = target_tab
-elif 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0
 
 # --- Header Section ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
@@ -96,7 +77,6 @@ st.markdown('<p class="author-credentials">PhD(Math), IIT Delhi, India | 10 Year
 if st.session_state.active_unit != "Home":
     if st.button("⬅️ Back to Course Units Dashboard", type="secondary"):
         st.session_state.active_unit = "Home"
-        st.session_state.active_tab = 0
         st.query_params.clear()
         st.rerun()
     st.divider()
@@ -111,7 +91,6 @@ if st.session_state.active_unit == "Home":
     with col1:
         if st.button("📦 **Unit-I**\n\nSystems of Linear Equations & Matrices", use_container_width=True, key="u1"):
             st.session_state.active_unit = "Unit-I"
-            st.session_state.active_tab = 0
             st.query_params["unit"] = "1"
             st.query_params["tab"] = "0"
             st.rerun()
@@ -142,14 +121,8 @@ if st.session_state.active_unit == "Home":
 
 # --- RENDER ACTIVE MODULE CONTENT ---
 elif st.session_state.active_unit == "Unit-I":
-    # Ensure active_tab is synchronized with current query params before rendering module
-    try:
-        q_tab = int(st.query_params.get("tab", 0))
-    except ValueError:
-        q_tab = 0
-    st.session_state.active_tab = q_tab
-    
     Unit1_systems.render()
+
 elif st.session_state.active_unit == "Unit-II":
     st.header("Unit-II: Vector Spaces")
     st.info("Sub-modules for Subspaces, Linear Independence, and Basis/Dimension are under development.")
