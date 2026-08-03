@@ -63,24 +63,36 @@ def render():
         "Rank & Solutions"
     ]
     
-    # Retrieve active tab index safely from session state
-    default_tab_idx = getattr(st.session_state, "active_tab", 0)
-    if not (0 <= default_tab_idx < len(tab_names)):
-        default_tab_idx = 0
+    # 1. Read target tab from URL query params (default to 0 if missing/invalid)
+    try:
+        query_tab = int(st.query_params.get("tab", 0))
+    except ValueError:
+        query_tab = 0
+        
+    if not (0 <= query_tab < len(tab_names)):
+        query_tab = 0
 
-    # Horizontal radio group tied directly to session state index
+    # 2. Force session state to align with the URL parameter on load/navigation
+    if "active_tab" not in st.session_state or st.session_state.active_tab != query_tab:
+        st.session_state.active_tab = query_tab
+
+    # If the widget key already exists but doesn't match the URL, sync it
+    target_tab_name = tab_names[st.session_state.active_tab]
+    if st.session_state.get("u1_sub_tabs") != target_tab_name:
+        st.session_state["u1_sub_tabs"] = target_tab_name
+
+    # 3. Horizontal radio group
     selected_tab = st.radio(
         "Select Sub-Topic", 
         tab_names, 
-        index=default_tab_idx, 
         horizontal=True, 
         label_visibility="collapsed",
         key="u1_sub_tabs"
     )
     
-    # Map manual tab clicks back to session state and query parameters
+    # 4. If user clicks manually, update URL query parameters and rerun
     current_tab_idx = tab_names.index(selected_tab)
-    if st.session_state.get("active_tab", 0) != current_tab_idx:
+    if st.session_state.active_tab != current_tab_idx:
         st.session_state.active_tab = current_tab_idx
         st.query_params["tab"] = str(current_tab_idx)
         st.rerun()
