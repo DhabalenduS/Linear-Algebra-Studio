@@ -63,39 +63,16 @@ def render():
         "Rank & Solutions"
     ]
     
-    # 1. Read and validate the 'tab' query parameter safely
-    try:
-        query_tab = int(st.query_params.get("tab", 0))
-    except ValueError:
-        query_tab = 0
-        
-    if not (0 <= query_tab < len(tab_names)):
-        query_tab = 0
-
-    # 2. Synchronize with session state
-    if "active_tab" not in st.session_state or st.session_state.active_tab != query_tab:
-        st.session_state.active_tab = query_tab
-
-    # 3. Create a unique dynamic widget key so Streamlit rebuilds the radio when the URL changes
-    widget_key = f"u1_sub_tabs_v2_{st.session_state.active_tab}"
-
-    # 4. Render radio button initialized directly to the active tab index
+    # Map friendly tab names to string indices for URL query params ("0", "1", "2", "3")
+    # Streamlit's native query-params binding matches string values to options or indices.
     selected_tab = st.radio(
         "Select Sub-Topic", 
         tab_names, 
-        index=st.session_state.active_tab, 
         horizontal=True, 
         label_visibility="collapsed",
-        key=widget_key
+        key="tab",
+        bind="query-params"
     )
-    
-    # 5. Handle manual user interaction (updating URL when clicked on page)
-    current_tab_idx = tab_names.index(selected_tab)
-    if st.session_state.active_tab != current_tab_idx:
-        st.session_state.active_tab = current_tab_idx
-        st.query_params["unit"] = "1"
-        st.query_params["tab"] = str(current_tab_idx)
-        st.rerun()
     
     st.divider()
     
