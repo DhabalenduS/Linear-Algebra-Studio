@@ -142,8 +142,14 @@ if st.session_state.active_unit == "Home":
 
 # --- RENDER ACTIVE MODULE CONTENT ---
 elif st.session_state.active_unit == "Unit-I":
+    # Ensure active_tab is synchronized with current query params before rendering module
+    try:
+        q_tab = int(st.query_params.get("tab", 0))
+    except ValueError:
+        q_tab = 0
+    st.session_state.active_tab = q_tab
+    
     Unit1_systems.render()
-
 elif st.session_state.active_unit == "Unit-II":
     st.header("Unit-II: Vector Spaces")
     st.info("Sub-modules for Subspaces, Linear Independence, and Basis/Dimension are under development.")
