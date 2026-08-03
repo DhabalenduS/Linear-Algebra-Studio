@@ -51,7 +51,7 @@ st.markdown("""
 # --- Query Parameter & Session State Synchronization ---
 query_params = st.query_params
 
-# Parse Unit from URL if present, otherwise default to Home
+# Parse Unit from URL if present
 target_unit = "Home"
 if "unit" in query_params:
     unit_val = str(query_params["unit"])
@@ -66,7 +66,7 @@ if "unit" in query_params:
     if unit_val in mapping:
         target_unit = mapping[unit_val]
 
-# Parse Tab from URL if present, otherwise default to 0
+# Parse Tab from URL if present
 target_tab = 0
 if "tab" in query_params:
     try:
@@ -74,20 +74,16 @@ if "tab" in query_params:
     except ValueError:
         target_tab = 0
 
-# Initialize or update session state based on URL parameters
-if 'active_unit' not in st.session_state:
+# Synchronize session state with URL deep-links
+if "unit" in query_params:
     st.session_state.active_unit = target_unit
-else:
-    # If the URL specifies a unit, override session state to match the deep link
-    if "unit" in query_params:
-        st.session_state.active_unit = target_unit
+elif 'active_unit' not in st.session_state:
+    st.session_state.active_unit = "Home"
 
-if 'active_tab' not in st.session_state:
+if "tab" in query_params:
     st.session_state.active_tab = target_tab
-else:
-    # If the URL specifies a tab, override session state to match the deep link
-    if "tab" in query_params:
-        st.session_state.active_tab = target_tab
+elif 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
 
 # --- Header Section ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
@@ -115,25 +111,33 @@ if st.session_state.active_unit == "Home":
     with col1:
         if st.button("📦 **Unit-I**\n\nSystems of Linear Equations & Matrices", use_container_width=True, key="u1"):
             st.session_state.active_unit = "Unit-I"
+            st.session_state.active_tab = 0
+            st.query_params["unit"] = "1"
+            st.query_params["tab"] = "0"
             st.rerun()
         if st.button("📦 **Unit-IV**\n\nInner Product Spaces & Orthogonality", use_container_width=True, key="u4"):
             st.session_state.active_unit = "Unit-IV"
+            st.query_params["unit"] = "4"
             st.rerun()
 
     with col2:
         if st.button("📦 **Unit-II**\n\nVector Spaces & Subspaces", use_container_width=True, key="u2"):
             st.session_state.active_unit = "Unit-II"
+            st.query_params["unit"] = "2"
             st.rerun()
         if st.button("📦 **Unit-V**\n\nEigenvalues & Eigenvectors", use_container_width=True, key="u5"):
             st.session_state.active_unit = "Unit-V"
+            st.query_params["unit"] = "5"
             st.rerun()
 
     with col3:
         if st.button("📦 **Unit-III**\n\nLinear Transformations", use_container_width=True, key="u3"):
             st.session_state.active_unit = "Unit-III"
+            st.query_params["unit"] = "3"
             st.rerun()
         if st.button("📦 **Unit-VI**\n\nReal-World Applications", use_container_width=True, key="u6"):
             st.session_state.active_unit = "Unit-VI"
+            st.query_params["unit"] = "6"
             st.rerun()
 
 # --- RENDER ACTIVE MODULE CONTENT ---
