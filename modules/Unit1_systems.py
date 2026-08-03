@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import re
 from fractions import Fraction
+import matplotlib.pyplot as plt
 
 def format_matrix_latex(mat):
     latex_rows = []
@@ -62,7 +63,6 @@ def render():
         "Inverse of a Matrix"
     ]
     
-    # 1. Read target tab from URL query params safely
     try:
         query_tab = int(st.query_params.get("tab", 0))
     except ValueError:
@@ -71,8 +71,6 @@ def render():
     if not (0 <= query_tab < len(tab_names)):
         query_tab = 0
 
-    # 2. Use a dynamically changing widget key so Streamlit completely redraws 
-    # the radio button when the URL tab parameter changes from the outside.
     dynamic_key = f"u1_sub_tabs_key_{query_tab}"
 
     selected_tab = st.radio(
@@ -84,7 +82,6 @@ def render():
         key=dynamic_key
     )
     
-    # 3. If a user clicks manually inside the app, update URL parameters and rerun
     current_tab_idx = tab_names.index(selected_tab)
     if query_tab != current_tab_idx:
         st.query_params["unit"] = "1"
@@ -234,6 +231,7 @@ def render():
                 for i in range(n_vars - 1, -1, -1):
                     x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
                 st.success(f"Final Solution Vector x: {x}")
+                st.session_state['last_solved_system'] = (A_mat, b_col)
                 
         elif "LU" in method_choice:
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
@@ -292,6 +290,7 @@ def render():
                 else:
                     st.markdown("**Final Solution Vector (x solving Ux = y)**")
                     st.write(x)
+                st.session_state['last_solved_system'] = (A, b)
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
                 try:
@@ -311,8 +310,58 @@ def render():
                         st.success("The system is **Consistent** with a **Unique Solution**.")
                     else:
                         st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
+                    st.session_state['last_solved_system'] = (mat_a, vec_b)
                 except Exception as e:
                     st.error(f"Error calculating rank: {e}")
+
+        # --- OPTIONAL GEOMETRICAL VISUALIZATION SECTION ---
+        if n_vars in [2, 3] and 'last_solved_system' in st.session_state:
+            st.markdown("---")
+            with st.expander("📈 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
+                st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
+                if st.button("Generate Geometry Plot", key="gen_geom_plot"):
+                    A_plot, b_plot = st.session_state['last_solved_system']
+                    if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
+                        # 2D Plot: Lines intersection
+                        fig, ax = plt.subplots(figsize=(6, 6))
+                        x_vals = np.linspace(-10, 10, 400)
+                        for i in range(len(b_plot)):
+                            a1, a2 = A_plot[i, 0], A_plot[i, 1]
+                            c = b_plot[i]
+                            if a2 != 0:
+                                y_vals = (c - a1 * x_vals) / a2
+                                ax.plot(x_vals, y_vals, label=f"Eq {i+1}: {a1}x + {a2}y = {c}")
+                            else:
+                                if a1 != 0:
+                                    x_const = c / a1
+                                    ax.axvline(x=x_const, label=f"Eq {i+1}: x = {x_const}")
+                        ax.axhline(0, color='black', linewidth=1)
+                        ax.axvline(0, color='black', linewidth=1)
+                        ax.set_xlim(-10, 10)
+                        ax.set_ylim(-10, 10)
+                        ax.grid(True, linestyle='--', alpha=0.6)
+                        ax.legend()
+                        ax.set_title("Geometrical Interpretation (2D Lines)")
+                        st.pyplot(fig)
+                        
+                    elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
+                        # 3D Plot: Planes intersection
+                        fig = plt.figure(figsize=(8, 6))
+                        ax = fig.add_subplot(111, projection='3d')
+                        xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
+                        for i in range(min(3, len(b_plot))):
+                            a, b, c = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                            d = b_plot[i]
+                            if c != 0:
+                                zz = (d - a * xx - b * yy) / c
+                                ax.plot_surface(xx, yy, zz, alpha=0.5, label=f"Plane {i+1}")
+                        ax.set_xlabel("X-axis")
+                        ax.set_ylabel("Y-axis")
+                        ax.set_zlabel("Z-axis")
+                        ax.set_title("Geometrical Interpretation (3D Planes)")
+                        st.pyplot(fig)
+                    else:
+                        st.warning("Visualization is optimized for 2 or 3 variable systems.")
 
     # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
