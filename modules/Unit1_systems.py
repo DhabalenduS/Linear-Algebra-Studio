@@ -57,10 +57,9 @@ def render():
     st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
     
     tab_names = [
-        "Row Operations & RREF", 
-        "Matrix Arithmetic & Inverses", 
-        "Gaussian Elimination & LU", 
-        "Rank & Solutions"
+        "Row Operations", 
+        "System of Linear Equations", 
+        "Inverse of a Matrix"
     ]
     
     # 1. Read target tab from URL query params safely
@@ -94,8 +93,8 @@ def render():
     
     st.divider()
     
-    # --- TAB 0: ROW OPERATIONS & RREF ---
-    if selected_tab == "Row Operations & RREF":
+    # --- TAB 0: ROW OPERATIONS ---
+    if selected_tab == "Row Operations":
         st.markdown("#### Interactive Matrix Row Operations & RREF Practice")
         st.markdown("Practice elementary row transformations, echelon forms, and matrix reduction.")
 
@@ -184,52 +183,14 @@ def render():
                     with st.expander(f"Step {idx+1}: {item['operation']}"):
                         st.latex(format_matrix_latex(item['matrix']))
 
-    # --- TAB 1: MATRIX ARITHMETIC & INVERSES ---
-    elif selected_tab == "Matrix Arithmetic & Inverses":
-        st.markdown("#### Matrix Multiplication & Invertible Matrices Practice")
-        st.info("Interactive workspace for testing matrix products, determinants, and finding matrix inverses ($A^{-1}$).")
-        
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.markdown("##### Matrix A Input")
-            a_input = st.text_area("Row-by-row values for A (comma separated rows)", value="1, 2\n3, 4", key="mat_a_val")
-        with col_m2:
-            st.markdown("##### Matrix B Input")
-            b_input = st.text_area("Row-by-row values for B (comma separated rows)", value="5, 6\n7, 8", key="mat_b_val")
-            
-        if st.button("Compute Products & Inverses", type="primary", key="calc_mult"):
-            try:
-                A = np.array([[float(x) for x in r.split(",")] for r in a_input.strip().split("\n")], dtype=float)
-                B = np.array([[float(x) for x in r.split(",")] for r in b_input.strip().split("\n")], dtype=float)
-                
-                st.markdown("##### Results:")
-                col_res1, col_res2, col_res3 = st.columns(3)
-                with col_res1:
-                    st.markdown("**Matrix Product ($A \\times B$)**")
-                    st.latex(format_matrix_latex(np.dot(A, B)))
-                with col_res2:
-                    st.markdown("**Inverse of A ($A^{-1}$)**")
-                    if A.shape[0] == A.shape[1] and np.linalg.det(A) != 0:
-                        st.latex(format_matrix_latex(np.linalg.inv(A)))
-                    else:
-                        st.warning("Matrix A is not square or is non-invertible (singular).")
-                with col_res3:
-                    st.markdown("**Inverse of B ($B^{-1}$)**")
-                    if B.shape[0] == B.shape[1] and np.linalg.det(B) != 0:
-                        st.latex(format_matrix_latex(np.linalg.inv(B)))
-                    else:
-                        st.warning("Matrix B is not square or is non-invertible (singular).")
-            except Exception as e:
-                st.error(f"Computation error: {e}. Check input dimensions.")
-
-    # --- TAB 2: GAUSSIAN ELIMINATION & LU DECOMPOSITION ---
-    elif selected_tab == "Gaussian Elimination & LU":
+    # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
+    elif selected_tab == "System of Linear Equations":
         st.markdown("#### System of Linear Equations Solver")
-        st.markdown("Solve $Ax = b$ using Gauss Elimination (Manual/Automated) or LU Factorization (Doolittle's / Crout's methods).")
+        st.markdown("Solve $Ax = b$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
         method_choice = st.selectbox(
             "Select Solution Technique", 
-            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)"]
+            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
         n_vars = st.number_input("Number of Variables / Equations ($n$)", min_value=2, max_value=5, value=3, step=1, key="sys_n")
@@ -244,41 +205,37 @@ def render():
         b_vec = [float(x) for x in b_val.split()]
         
         if method_choice == "Gauss Elimination":
-            mode = st.radio("Select Mode", ["Automated Step-by-Step", "Manual Practice Mode"])
-            if st.button("Run Solver", type="primary", key="run_gauss"):
+            if st.button("Run Gauss Solver", type="primary", key="run_gauss"):
                 A_mat = np.array(A_rows, dtype=float)
                 b_col = np.array(b_vec, dtype=float)
                 aug = np.column_stack((A_mat, b_col))
                 
-                if mode == "Automated Step-by-Step":
-                    st.markdown("##### Automated Execution Steps")
-                    steps = [aug.copy()]
-                    curr = aug.copy()
-                    for i in range(n_vars):
-                        if curr[i, i] == 0:
-                            for r in range(i+1, n_vars):
-                                if curr[r, i] != 0:
-                                    curr[[i, r]] = curr[[r, i]]
-                                    steps.append(curr.copy())
-                                    break
-                        for j in range(i+1, n_vars):
-                            if curr[i, i] != 0:
-                                factor = curr[j, i] / curr[i, i]
-                                curr[j] = curr[j] - factor * curr[i]
+                st.markdown("##### Automated Execution Steps")
+                steps = [aug.copy()]
+                curr = aug.copy()
+                for i in range(n_vars):
+                    if curr[i, i] == 0:
+                        for r in range(i+1, n_vars):
+                            if curr[r, i] != 0:
+                                curr[[i, r]] = curr[[r, i]]
                                 steps.append(curr.copy())
+                                break
+                    for j in range(i+1, n_vars):
+                        if curr[i, i] != 0:
+                            factor = curr[j, i] / curr[i, i]
+                            curr[j] = curr[j] - factor * curr[i]
+                            steps.append(curr.copy())
+                
+                for idx, step_mat in enumerate(steps):
+                    st.markdown(f"**Step {idx} Matrix:**")
+                    st.latex(format_matrix_latex(step_mat))
                     
-                    for idx, step_mat in enumerate(steps):
-                        st.markdown(f"**Step {idx} Matrix:**")
-                        st.latex(format_matrix_latex(step_mat))
-                        
-                    x = np.zeros(n_vars)
-                    for i in range(n_vars - 1, -1, -1):
-                        x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
-                    st.success(f"Final Solution Vector x: {x}")
-                else:
-                    st.info("Switch to Tab 0 (Row Operations & RREF) for full hands-on manual row operation validation on this matrix system.")
-                    
-        else:
+                x = np.zeros(n_vars)
+                for i in range(n_vars - 1, -1, -1):
+                    x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
+                st.success(f"Final Solution Vector x: {x}")
+                
+        elif "LU" in method_choice:
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
             sub_option = st.selectbox(
                 "LU Breakdown View", 
@@ -335,17 +292,62 @@ def render():
                 else:
                     st.markdown("**Final Solution Vector (x solving Ux = y)**")
                     st.write(x)
+        else:
+            if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
+                try:
+                    mat_a = np.array(A_rows, dtype=float)
+                    vec_b = np.array(b_vec, dtype=float)
+                    aug_mat = np.column_stack((mat_a, vec_b))
+                    
+                    r_a = np.linalg.matrix_rank(mat_a)
+                    r_aug = np.linalg.matrix_rank(aug_mat)
+                    
+                    st.markdown(f"* Rank of Coefficient Matrix A: **{r_a}**")
+                    st.markdown(f"* Rank of Augmented Matrix [A|b]: **{r_aug}**")
+                    
+                    if r_a != r_aug:
+                        st.error("The system is **Inconsistent** (No solutions).")
+                    elif r_a == r_aug and r_a == n_vars:
+                        st.success("The system is **Consistent** with a **Unique Solution**.")
+                    else:
+                        st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
+                except Exception as e:
+                    st.error(f"Error calculating rank: {e}")
 
-    # --- TAB 3: RANK & SOLUTIONS ---
-    elif selected_tab == "Rank & Solutions":
-        st.markdown("#### Rank of a Matrix & System Consistency")
-        st.info("Check matrix rank, column/row space dimensions, and consistency conditions for linear equation sets.")
+    # --- TAB 2: INVERSE OF A MATRIX ---
+    elif selected_tab == "Inverse of a Matrix":
+        st.markdown("#### Matrix Multiplication & Invertible Matrices Practice")
+        st.info("Interactive workspace for testing matrix products, determinants, and finding matrix inverses ($A^{-1}$), plus elementary matrix properties.")
         
-        matrix_text = st.text_area("Enter matrix rows (comma separated values)", value="1, 2, 3\n2, 4, 6\n1, 1, 1", key="rank_mat")
-        if st.button("Calculate Rank", type="primary", key="calc_rank"):
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.markdown("##### Matrix A Input")
+            a_input = st.text_area("Row-by-row values for A (comma separated rows)", value="1, 2\n3, 4", key="mat_a_val")
+        with col_m2:
+            st.markdown("##### Matrix B Input")
+            b_input = st.text_area("Row-by-row values for B (comma separated rows)", value="5, 6\n7, 8", key="mat_b_val")
+            
+        if st.button("Compute Products & Inverses", type="primary", key="calc_mult"):
             try:
-                mat = np.array([[float(x) for x in r.split(",")] for r in matrix_text.strip().split("\n")], dtype=float)
-                rank = np.linalg.matrix_rank(mat)
-                st.success(f"The rank of the matrix is: **{rank}**")
+                A = np.array([[float(x) for x in r.split(",")] for r in a_input.strip().split("\n")], dtype=float)
+                B = np.array([[float(x) for x in r.split(",")] for r in b_input.strip().split("\n")], dtype=float)
+                
+                st.markdown("##### Results:")
+                col_res1, col_res2, col_res3 = st.columns(3)
+                with col_res1:
+                    st.markdown("**Matrix Product ($A \\times B$)**")
+                    st.latex(format_matrix_latex(np.dot(A, B)))
+                with col_res2:
+                    st.markdown("**Inverse of A ($A^{-1}$)**")
+                    if A.shape[0] == A.shape[1] and np.linalg.det(A) != 0:
+                        st.latex(format_matrix_latex(np.linalg.inv(A)))
+                    else:
+                        st.warning("Matrix A is not square or is non-invertible (singular).")
+                with col_res3:
+                    st.markdown("**Inverse of B ($B^{-1}$)**")
+                    if B.shape[0] == B.shape[1] and np.linalg.det(B) != 0:
+                        st.latex(format_matrix_latex(np.linalg.inv(B)))
+                    else:
+                        st.warning("Matrix B is not square or is non-invertible (singular).")
             except Exception as e:
-                st.error(f"Error parsing matrix: {e}")
+                st.error(f"Computation error: {e}. Check input dimensions.")
