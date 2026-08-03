@@ -63,10 +63,12 @@ def render():
         "Rank & Solutions"
     ]
     
+    # Retrieve active tab index safely from session state
     default_tab_idx = getattr(st.session_state, "active_tab", 0)
     if not (0 <= default_tab_idx < len(tab_names)):
         default_tab_idx = 0
 
+    # Horizontal radio group tied directly to session state index
     selected_tab = st.radio(
         "Select Sub-Topic", 
         tab_names, 
@@ -75,6 +77,13 @@ def render():
         label_visibility="collapsed",
         key="u1_sub_tabs"
     )
+    
+    # Map manual tab clicks back to session state and query parameters
+    current_tab_idx = tab_names.index(selected_tab)
+    if st.session_state.get("active_tab", 0) != current_tab_idx:
+        st.session_state.active_tab = current_tab_idx
+        st.query_params["tab"] = str(current_tab_idx)
+        st.rerun()
     
     st.divider()
     
@@ -255,7 +264,6 @@ def render():
                         st.markdown(f"**Step {idx} Matrix:**")
                         st.latex(format_matrix_latex(step_mat))
                         
-                    # Back substitution solution
                     x = np.zeros(n_vars)
                     for i in range(n_vars - 1, -1, -1):
                         x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
@@ -264,7 +272,6 @@ def render():
                     st.info("Switch to Tab 0 (Row Operations & RREF) for full hands-on manual row operation validation on this matrix system.")
                     
         else:
-            # LU Decomposition (Doolittle / Crout)
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
             sub_option = st.selectbox(
                 "LU Breakdown View", 
@@ -297,13 +304,11 @@ def render():
                             s = sum(L[i, k] * U[k, j] for k in range(i))
                             U[i, j] = (A[i, j] - s) / L[i, i]
                 
-                # Solve Ly = b
                 y = np.zeros(n)
                 for i in range(n):
                     s = sum(L[i, k] * y[k] for k in range(i))
                     y[i] = (b[i] - s) / L[i, i]
                     
-                # Solve Ux = y
                 x = np.zeros(n)
                 for i in range(n - 1, -1, -1):
                     s = sum(U[i, k] * x[k] for k in range(i + 1, n))
@@ -324,7 +329,7 @@ def render():
                     st.markdown("**Final Solution Vector (x solving Ux = y)**")
                     st.write(x)
 
-    # --- TAB 4: RANK & SOLUTIONS ---
+    # --- TAB 3: RANK & SOLUTIONS ---
     elif selected_tab == "Rank & Solutions":
         st.markdown("#### Rank of a Matrix & System Consistency")
         st.info("Check matrix rank, column/row space dimensions, and consistency conditions for linear equation sets.")
