@@ -63,21 +63,40 @@ def render():
         "Rank & Solutions"
     ]
     
-    # Map friendly tab names to string indices for URL query params ("0", "1", "2", "3")
-    # Streamlit's native query-params binding matches string values to options or indices.
+    # 1. Read target tab from URL query params safely
+    try:
+        query_tab = int(st.query_params.get("tab", 0))
+    except ValueError:
+        query_tab = 0
+        
+    if not (0 <= query_tab < len(tab_names)):
+        query_tab = 0
+
+    # 2. Use a dynamically changing widget key so Streamlit completely redraws 
+    # the radio button when the URL tab parameter changes from the outside.
+    dynamic_key = f"u1_sub_tabs_key_{query_tab}"
+
     selected_tab = st.radio(
         "Select Sub-Topic", 
         tab_names, 
+        index=query_tab, 
         horizontal=True, 
         label_visibility="collapsed",
-        key="tab",
-        bind="query-params"
+        key=dynamic_key
     )
+    
+    # 3. If a user clicks manually inside the app, update URL parameters and rerun
+    current_tab_idx = tab_names.index(selected_tab)
+    if query_tab != current_tab_idx:
+        st.query_params["unit"] = "1"
+        st.query_params["tab"] = str(current_tab_idx)
+        st.rerun()
     
     st.divider()
     
     # --- TAB 0: ROW OPERATIONS & RREF ---
     if selected_tab == "Row Operations & RREF":
+        # ... (rest of your tab code remains identical)
         st.markdown("#### Interactive Matrix Row Operations & RREF Practice")
         st.markdown("Practice elementary row transformations, echelon forms, and matrix reduction.")
 
