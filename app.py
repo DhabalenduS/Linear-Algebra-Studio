@@ -48,10 +48,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Query Parameters Sync ---
+# --- Query Parameters & Session State Sync ---
 query_params = st.query_params
 
-target_unit = "Home"
 if "unit" in query_params:
     unit_val = str(query_params["unit"])
     mapping = {
@@ -59,14 +58,11 @@ if "unit" in query_params:
         "4": "Unit-IV", "5": "Unit-V", "6": "Unit-VI"
     }
     if unit_val in mapping:
-        target_unit = mapping[unit_val]
-
-if "unit" in query_params:
-    st.session_state.active_unit = target_unit
-elif 'active_unit' not in st.session_state:
+        st.session_state.active_unit = mapping[unit_val]
+elif "active_unit" not in st.session_state:
     st.session_state.active_unit = "Home"
 
-# --- Header Section ---
+# --- GLOBAL HEADER (Always visible across all views & deep links) ---
 st.markdown('<p class="centered-header">Linear Algebra Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="centered-subheader">Interactive workspace for UG/PG Students</p>', unsafe_allow_html=True)
 st.markdown('<p class="author-by">by</p>', unsafe_allow_html=True)
