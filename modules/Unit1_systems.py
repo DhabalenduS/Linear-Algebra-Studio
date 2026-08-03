@@ -96,7 +96,6 @@ def render():
     
     # --- TAB 0: ROW OPERATIONS & RREF ---
     if selected_tab == "Row Operations & RREF":
-        # ... (rest of your tab code remains identical)
         st.markdown("#### Interactive Matrix Row Operations & RREF Practice")
         st.markdown("Practice elementary row transformations, echelon forms, and matrix reduction.")
 
