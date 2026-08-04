@@ -659,6 +659,27 @@ def render():
                     elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
                         fig = plt.figure(figsize=(8, 6))
                         ax = fig.add_subplot(111, projection='3d')
+                        
+                        # Create grid points for x and y
+                        x_lin = np.linspace(-5, 5, 20)
+                        y_lin = np.linspace(-5, 5, 20)
+                        X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
+                        
+                        colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
+                        for i in range(len(b_plot)):
+                            a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                            c = b_plot[i]
+                            if a3 != 0:
+                                Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
+                                ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.5, color=colors[i % len(colors)], label=f"Eq {i+1}")
+                        
+                        # Try plotting solution point if unique solution exists
+                        try:
+                            sol_pt = np.linalg.solve(A_plot, b_plot)
+                            ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=100, label='Solution')
+                        except Exception:
+                            pass
+                            
                         ax.set_xlabel("X-axis")
                         ax.set_ylabel("Y-axis")
                         ax.set_zlabel("Z-axis")
