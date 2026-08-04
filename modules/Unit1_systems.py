@@ -93,6 +93,10 @@ def render():
         div.stNumberInput {
             max-width: 180px !important;
         }
+        /* Limit selectbox width to 1/4 (approx 250px or responsive constraint) */
+        div.stSelectbox {
+            max-width: 250px !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -305,22 +309,29 @@ def render():
     # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
     elif selected_tab == "System of Linear Equations":
         st.markdown("#### System of Linear Equations Solver")
-        st.markdown("Solve $Ax = b$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
+        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
         method_choice = st.selectbox(
             "Select Solution Technique", 
             ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
-        n_vars = st.number_input("Number of Variables / Equations ($n$)", min_value=1, max_value=20, value=3, step=1, key="sys_n")
+        n_vars = st.number_input("Number of variables", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
-        st.markdown("##### Enter Coefficient Matrix A and Vector b")
+        st.markdown("##### Enter Coefficient Matrix A and Vector B (space separated)")
+        
+        example_placeholder = " ".join("1" if j == 0 else "0" for j in range(n_vars))
         A_rows = []
         for i in range(n_vars):
-            r_val = st.text_input(f"Row {i+1} coefficients (space separated)", value=" ".join(["1" if j==i else "0" for j in range(n_vars)]), key=f"gauss_a_{i}")
+            c_lbl, c_inp = st.columns([0.06, 0.3])
+            with c_lbl:
+                st.markdown(f"**R{i+1}**")
+            with c_inp:
+                r_val = st.text_input(f"Row {i+1}", value=" ".join(["1" if j==i else "0" for j in range(n_vars)]), placeholder=f"e.g. {example_placeholder}", key=f"gauss_a_{i}", label_visibility="collapsed")
             A_rows.append([float(x) for x in r_val.split()])
             
-        b_val = st.text_input("Constant vector b (space separated)", value=" ".join(["1"] * n_vars), key="gauss_b")
+        st.markdown("##### Constant vector B (space separated)")
+        b_val = st.text_input("Constant vector B", value=" ".join(["1"] * n_vars), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
         b_vec = [float(x) for x in b_val.split()]
         
         if method_choice == "Gauss Elimination":
@@ -352,14 +363,14 @@ def render():
                 x = np.zeros(n_vars)
                 for i in range(n_vars - 1, -1, -1):
                     x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
-                st.success(f"Final Solution Vector x: {x}")
+                st.success(f"Final Solution Vector X: {x}")
                 st.session_state['last_solved_system'] = (A_mat, b_col)
                 
         elif "LU" in method_choice:
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
             sub_option = st.selectbox(
                 "LU Breakdown View", 
-                ["(i) Show L and U Matrices (Factorization)", "(ii) Show Intermediate Steps (Solving Ly = b)", "(iii) Final Solution Vector (x)"]
+                ["(i) Show L and U Matrices (Factorization)", "(ii) Show Intermediate Steps (Solving Ly = B)", "(iii) Final Solution Vector (X)"]
             )
             
             if st.button("Compute LU Decomposition", type="primary", key="run_lu"):
@@ -407,10 +418,10 @@ def render():
                         st.markdown("**Upper Triangular Matrix U**")
                         st.latex(format_matrix_latex(U))
                 elif "(ii)" in sub_option:
-                    st.markdown("**Intermediate Solution Vector (y solving Ly = b)**")
+                    st.markdown("**Intermediate Solution Vector (y solving Ly = B)**")
                     st.write(y)
                 else:
-                    st.markdown("**Final Solution Vector (x solving Ux = y)**")
+                    st.markdown("**Final Solution Vector (X solving UX = y)**")
                     st.write(x)
                 st.session_state['last_solved_system'] = (A, b)
         else:
@@ -424,7 +435,7 @@ def render():
                     r_aug = np.linalg.matrix_rank(aug_mat)
                     
                     st.markdown(f"* Rank of Coefficient Matrix A: **{r_a}**")
-                    st.markdown(f"* Rank of Augmented Matrix [A|b]: **{r_aug}**")
+                    st.markdown(f"* Rank of Augmented Matrix [A|B]: **{r_aug}**")
                     
                     if r_a != r_aug:
                         st.error("The system is **Inconsistent** (No solutions).")
