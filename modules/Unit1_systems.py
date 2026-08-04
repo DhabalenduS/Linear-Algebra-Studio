@@ -659,7 +659,7 @@ def render():
                             st.pyplot(fig)
                             
                         elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
-                            fig = plt.figure(figsize=(5, 4))
+                            fig = plt.figure(figsize=(5, 4))  # Reduced size for better layout fit
                             ax = fig.add_subplot(111, projection='3d')
                             
                             x_lin = np.linspace(-5, 5, 20)
@@ -683,10 +683,11 @@ def render():
                             except Exception:
                                 pass
                                 
-                            ax.set_xlabel("X-axis")
-                            ax.set_ylabel("Y-axis")
-                            ax.set_zlabel("Z-axis")
-                            ax.set_title("Geometrical Interpretation (3D Planes)")
+                            ax.set_xlabel("X-axis", fontsize=8)
+                            ax.set_ylabel("Y-axis", fontsize=8)
+                            ax.set_zlabel("Z-axis", fontsize=8)
+                            ax.tick_params(axis='both', which='major', labelsize=7)
+                            ax.set_title("Geometrical Interpretation (3D Planes)", fontsize=9)
                             st.pyplot(fig)
                         else:
                             st.warning("Visualization is optimized for 2 or 3 variable systems.")
