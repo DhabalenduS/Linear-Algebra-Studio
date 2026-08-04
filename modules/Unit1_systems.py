@@ -77,14 +77,22 @@ def matrix_to_pretty_string(mat):
 def render():
     st.markdown("""
         <style>
-        /* Restrict button widths to content size and make them look professional */
+        /* Force buttons and text inputs to have a compact, professional width */
         div.stButton > button {
-            width: fit-content !important;
-            padding-left: 1.2rem;
-            padding-right: 1.2rem;
-            padding-top: 0.4rem;
-            padding-bottom: 0.4rem;
-            border-radius: 6px;
+            width: auto !important;
+            display: inline-block !important;
+            flex: unset !important;
+            padding: 0.35rem 1rem !important;
+            font-size: 0.9rem !important;
+            border-radius: 4px;
+        }
+        /* Limit text input field widths so they aren't overly lengthy */
+        div.stTextInput > div.st-bx, div.stTextInput input {
+            max-width: 320px !important;
+        }
+        /* Limit number input containers for rows/columns */
+        div.stNumberInput {
+            max-width: 180px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -136,7 +144,7 @@ def render():
         if "original_matrix" not in st.session_state:
             st.session_state.original_matrix = None
 
-        col_set1, col_set2 = st.columns(2)
+        col_set1, col_set2 = st.columns([1, 1])
         with col_set1:
             rows = st.number_input("Rows", min_value=2, max_value=6, value=3, step=1, key="u1_rows")
         with col_set2:
@@ -150,29 +158,41 @@ def render():
 
         if st.session_state.original_matrix is None:
             st.markdown("##### Step 1: Define Matrix Entries (by space separated entries)")
+
             entered_rows = []
             valid_input = True
-            input_errors = []
+            input_warnings = []
 
+            temp_inputs = []
             for i in range(rows):
                 default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
                 row_input = st.text_input(f"Row {i+1}", value=default_val, key=f"row_{i}")
+                temp_inputs.append(row_input)
+
+            for i, row_input in enumerate(temp_inputs):
                 try:
                     row_vals = [Fraction(x) for x in row_input.strip().split()]
-                    if len(row_vals) != cols:
+                    if len(row_vals) > cols:
                         valid_input = False
-                        input_errors.append(f"Row {i+1} has {len(row_vals)} elements, but {cols} columns are required.")
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but only {cols} columns are allowed.")
+                    elif len(row_vals) < cols:
+                        valid_input = False
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but {cols} columns are required.")
                     entered_rows.append(row_vals)
                 except Exception:
                     valid_input = False
-                    input_errors.append(f"Row {i+1} contains invalid numeric entries or formatting.")
+                    input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
 
-            # Display real-time validation warnings immediately if entries don't match dimensions
-            if not valid_input:
-                for err in input_errors:
-                    st.warning(f"⚠️ {err}")
-                    
-            if st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init"):
+            # Display instant warnings right here above the initialize button
+            if input_warnings:
+                st.markdown("")
+                for warn in input_warnings:
+                    st.warning(f"⚠️ {warn}")
+
+            st.markdown("")
+            init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
+            
+            if init_btn:
                 if valid_input:
                     mat = np.array(entered_rows, dtype=object)
                     st.session_state.original_matrix = mat.copy()
@@ -180,7 +200,7 @@ def render():
                     st.session_state.matrix_history = []
                     st.rerun()
                 else:
-                    st.error("Please fix the row length and formatting errors highlighted above before initializing.")
+                    st.error("Please resolve the column size discrepancies highlighted above.")
         else:
             st.markdown("---")
             m_col1, m_col2 = st.columns(2)
