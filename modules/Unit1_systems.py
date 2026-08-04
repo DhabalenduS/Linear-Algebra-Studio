@@ -318,7 +318,7 @@ def render():
         )
         
         # (ii) Number of variables only
-        n_vars = st.number_input("Number of variables", min_value=1, max_value=20, value=3, step=1, key="sys_n")
+        n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
         # (iii) Enter Coefficient Matrix A and Vector B description update
         st.markdown("##### Enter Coefficient Matrix A (space separated)")
