@@ -616,6 +616,13 @@ def render():
 
                 st.markdown("---")
                 if "(ii)" in sub_option:
+                    st.markdown("**Intermediate Solution Vector ($y$ solving $Ly = B$):**")
+                    st.latex(f"Y = {format_matrix_latex(y.reshape(-1, 1))}^T")
+                elif "(iii)" in sub_option:
+                    st.markdown("**Final Solution Vector ($X$ solving $UX = y$):**")
+                    st.latex(f"X = {format_matrix_latex(x.reshape(-1, 1))}^T")
+                st.markdown("---")
+                if "(ii)" in sub_option:
                     st.markdown("**Step 2: Forward Substitution ($LY = B$):**")
                     
                     ly_rows = []
