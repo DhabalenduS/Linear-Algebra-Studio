@@ -161,21 +161,26 @@ def render():
             entered_rows = []
             valid_input = True
             input_warnings = []
+            has_empty_inputs = False
 
             temp_inputs = []
             for i in range(rows):
-                default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
-                # Left-aligned inline layout with tight columns for label and half-width input
+                # Start completely empty by default so there is no leftover or default data/warnings
                 c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
-                    row_input = st.text_input(f"Row {i+1} entries", value=default_val, key=f"row_{i}", label_visibility="collapsed")
+                    row_input = st.text_input(f"Row {i+1} entries", value="", placeholder="e.g. 1 2 3", key=f"row_{i}", label_visibility="collapsed")
                 temp_inputs.append(row_input)
 
             for i, row_input in enumerate(temp_inputs):
+                stripped = row_input.strip()
+                if not stripped:
+                    has_empty_inputs = True
+                    valid_input = False
+                    continue
                 try:
-                    row_vals = [Fraction(x) for x in row_input.strip().split()]
+                    row_vals = [Fraction(x) for x in stripped.split()]
                     if len(row_vals) > cols:
                         valid_input = False
                         input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but only {cols} columns are allowed.")
@@ -187,7 +192,8 @@ def render():
                     valid_input = False
                     input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
 
-            if input_warnings:
+            # Only show warnings if the user has typed something invalid, keeping initial state clean
+            if not has_empty_inputs and input_warnings:
                 st.markdown("")
                 for warn in input_warnings:
                     st.warning(f"⚠️ {warn}")
@@ -196,7 +202,9 @@ def render():
             init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
             
             if init_btn:
-                if valid_input:
+                if has_empty_inputs:
+                    st.error("Please fill in all row entries before initializing.")
+                elif valid_input:
                     mat = np.array(entered_rows, dtype=object)
                     st.session_state.original_matrix = mat.copy()
                     st.session_state.current_matrix = mat.copy()
