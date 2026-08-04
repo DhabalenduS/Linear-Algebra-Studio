@@ -163,13 +163,16 @@ def render():
             input_warnings = []
             has_empty_inputs = False
 
+            # Generate dynamic placeholder text based on the number of columns
+            example_placeholder = " ".join(str(j) for j in range(1, cols + 1))
+
             temp_inputs = []
             for i in range(rows):
                 c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
-                    row_input = st.text_input(f"Row {i+1} entries", value="", placeholder="e.g. 1 2 3", key=f"row_{i}", label_visibility="collapsed")
+                    row_input = st.text_input(f"Row {i+1} entries", value="", placeholder=f"e.g. {example_placeholder}", key=f"row_{i}", label_visibility="collapsed")
                 temp_inputs.append(row_input)
 
             for i, row_input in enumerate(temp_inputs):
