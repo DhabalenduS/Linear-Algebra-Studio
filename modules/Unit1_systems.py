@@ -797,4 +797,4 @@ def render():
                         st.warning("Matrix B is not square or is non-invertible (singular).")
             except Exception as e:
                 st.error(f"Computation error: {e}. Check input dimensions.")
-```[cite: 2]
+
