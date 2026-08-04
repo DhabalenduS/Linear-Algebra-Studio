@@ -3,13 +3,13 @@ import numpy as np
 import re
 from fractions import Fraction
 import matplotlib.pyplot as plt
-# Add this import at the very top of your script alongside matplotlib
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
 # Optional PDF generator support
 try:
     from fpdf import FPDF
-    PDF_AVAILABLE = Trueexcept ImportError:
+    PDF_AVAILABLE = True
+except ImportError:
     PDF_AVAILABLE = False
 
 def format_matrix_latex(mat):
@@ -33,7 +33,8 @@ def format_augmented_matrix_latex(mat):
     latex_rows = []
     ncols = mat.shape[1]
     for row in mat:
-        row_elems = []        for idx, val in enumerate(row):
+        row_elems = []
+        for idx, val in enumerate(row):
             try:
                 f = Fraction(val).limit_denominator()
                 if f.denominator == 1:
@@ -665,24 +666,16 @@ def render():
                         X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
                         
                         colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
-                        planes_plotted = False
-                        
                         for i in range(len(b_plot)):
                             a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
                             c = b_plot[i]
-                            
-                            # Safely handle non-zero z-coefficients to prevent division by zero / NaNs
                             if not np.isclose(a3, 0):
                                 Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
-                                # Clip extreme values to keep the plot bounded nicely
                                 Z_grid = np.clip(Z_grid, -20, 20)
                                 ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=f"Eq {i+1}")
-                                planes_plotted = True
                             else:
-                                # Fallback or notice for planes parallel to z-axis (e.g. a1*x + a2*y = c)
                                 st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
                         
-                        # Try plotting solution point if unique solution exists
                         try:
                             sol_pt = np.linalg.solve(A_plot, b_plot)
                             ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=100, label='Solution')
@@ -693,7 +686,6 @@ def render():
                         ax.set_ylabel("Y-axis")
                         ax.set_zlabel("Z-axis")
                         ax.set_title("Geometrical Interpretation (3D Planes)")
-                        
                         st.pyplot(fig)
                     else:
                         st.warning("Visualization is optimized for 2 or 3 variable systems.")
