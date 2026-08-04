@@ -616,11 +616,53 @@ def render():
 
                 st.markdown("---")
                 if "(ii)" in sub_option:
-                    st.markdown("**Intermediate Solution Vector ($y$ solving $Ly = B$):**")
-                    st.write(y)
+                    st.markdown("**Step 2: Forward Substitution ($LY = B$):**")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else L[i, j]) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}} {' '.join(ly_rows)} \\end{{bmatrix}}"
+                    
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{{bmatrix}}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{{bmatrix}}"
+                    
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Solving for $y$:**")
+                    for i in range(n):
+                        known_sum_terms = []
+                        for k in range(i):
+                            term_val = L[i, k] * y[k]
+                            known_sum_terms.append(f"{int(L[i, k])}({int(y[k]) if y[k].is_integer() else y[k]})")
+                        
+                        eq_line = f"y_{{ {i+1} }} = {int(y[i]) if y[i].is_integer() else y[i]}"
+                        if i > 0 and known_sum_terms:
+                            sum_str = " - ".join(known_sum_terms)
+                            st.latex(f"({int(L[i, i])})y_{{ {i+1} }} + {sum_str} = {b_curr[i]} \\implies {eq_line}")
+                        else:
+                            st.latex(f"y_{{ {i+1} }} = {int(y[i]) if y[i].is_integer() else y[i]}")
+                            
+                    st.markdown(f"**Intermediate Vector $Y = \\begin{{bmatrix}} " + " & ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{{bmatrix}}^T$**")
+
                 elif "(iii)" in sub_option:
-                    st.markdown("**Final Solution Vector ($X$ solving $UX = y$):**")
-                    st.write(x)
+                    st.markdown("**Step 3: Back Substitution ($UX = Y$):**")
+                    ux_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else U[i, j]) for j in range(n)])
+                        ux_rows.append(f"{row_str} \\\\")
+                    ux_matrix_str = f"\\begin{{bmatrix}} {' '.join(ux_rows)} \\end{{bmatrix}}"
+                    
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{{bmatrix}}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{{bmatrix}}"
+                    
+                    st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
+                    
+                    st.markdown("**Solving for $X$:**")
+                    for i in range(n - 1, -1, -1):
+                        st.latex(f"x_{{ {i+1} }} = {int(x[i]) if x[i].is_integer() else round(x[i], 4)}")
+                        
+                    st.markdown(f"**Final Solution Vector $X = \\begin{{bmatrix}} " + " & ".join([str(int(val) if val.is_integer() else round(val, 4)) for val in x]) + " \\end{{bmatrix}}^T$**")
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
                 try:
@@ -690,7 +732,6 @@ def render():
                                     a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
                                     c = b_plot[i]
                                     
-                                    # Format equation string for legend label
                                     eq_label = f"Eq {i+1}: {int(a1) if a1.is_integer() else a1}x + {int(a2) if a2.is_integer() else a2}y + {int(a3) if a3.is_integer() else a3}z = {int(c) if c.is_integer() else c}"
                                     
                                     if not np.isclose(a3, 0):
@@ -712,7 +753,6 @@ def render():
                                 ax.tick_params(axis='both', which='major', labelsize=6)
                                 ax.set_title("3D Planes Intersection", fontsize=8)
                                 
-                                # Add legend with equation labels adjusted for size
                                 ax.legend(loc='upper left', fontsize=5, framealpha=0.7)
                                 st.pyplot(fig)
                         else:
@@ -757,3 +797,4 @@ def render():
                         st.warning("Matrix B is not square or is non-invertible (singular).")
             except Exception as e:
                 st.error(f"Computation error: {e}. Check input dimensions.")
+```[cite: 2]
