@@ -55,6 +55,16 @@ def perform_row_operation(A, op_str):
     return new_A
 
 def render():
+    st.markdown("""
+        <style>
+        div.stButton > button {
+            width: auto;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
     
     tab_names = [
@@ -115,11 +125,12 @@ def render():
             st.rerun()
 
         if st.session_state.original_matrix is None:
-            st.markdown("##### Step 1: Define Matrix Entries")
+            st.markdown("##### Step 1: Define Matrix Entries (by space separated entries)")
             entered_rows = []
             valid_input = True
             for i in range(rows):
-                row_input = st.text_input(f"Row {i+1}", value=" ".join(["1" if j==i else "0" for j in range(cols)]), key=f"row_{i}")
+                default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
+                row_input = st.text_input(f"Row {i+1}", value=default_val, key=f"row_{i}")
                 try:
                     row_vals = [Fraction(x) for x in row_input.strip().split()]
                     if len(row_vals) != cols:
@@ -136,8 +147,18 @@ def render():
                     st.session_state.matrix_history = []
                     st.rerun()
                 else:
-                    st.error(f"Ensure every row contains exactly {cols} numbers/fractions.")
+                    st.error(f"Ensure every row contains exactly {cols} space-separated numbers/fractions.")
         else:
+            st.markdown("---")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                st.markdown("##### 📌 Initial Given Matrix")
+                st.latex(format_matrix_latex(st.session_state.original_matrix))
+            with m_col2:
+                st.markdown("##### 🔄 Current Matrix State")
+                st.latex(format_matrix_latex(st.session_state.current_matrix))
+            st.markdown("---")
+
             col_left, col_right = st.columns([1.2, 1])
             with col_left:
                 st.markdown("##### 🛠️ Apply Row Operation")
@@ -146,14 +167,14 @@ def render():
                 
                 c1, c2 = st.columns(2)
                 with c1:
-                    apply_btn = st.button("Execute Operation", type="primary", use_container_width=True, key="u1_exec")
+                    apply_btn = st.button("Execute Operation", type="primary", key="u1_exec")
                 with c2:
-                    undo_btn = st.button("Undo Last Step", use_container_width=True, key="u1_undo")
+                    undo_btn = st.button("Undo Last Step", key="u1_undo")
                     
                 if apply_btn and op_input:
                     try:
                         updated = perform_row_operation(st.session_state.current_matrix, op_input)
-                        st.session_state.matrix_history.append({"operation": op_input, "matrix": st.session_state.current_matrix.copy()})
+                        st.session_state.matrix_history.append({"operation": op_input, "matrix": updated.copy()})
                         st.session_state.current_matrix = updated
                         st.success(f"Successfully applied: {op_input}")
                         st.rerun()
@@ -162,20 +183,42 @@ def render():
                         
                 if undo_btn:
                     if st.session_state.matrix_history:
-                        last_state = st.session_state.matrix_history.pop()
-                        st.session_state.current_matrix = last_state["matrix"]
+                        st.session_state.matrix_history.pop()
+                        if st.session_state.matrix_history:
+                            st.session_state.current_matrix = st.session_state.matrix_history[-1]["matrix"].copy()
+                        else:
+                            st.session_state.current_matrix = st.session_state.original_matrix.copy()
                         st.info("Reverted last operation.")
                         st.rerun()
                     else:
                         st.warning("No operations to undo.")
 
             with col_right:
-                st.markdown("##### 📊 Current Matrix State")
-                st.latex(format_matrix_latex(st.session_state.current_matrix))
+                st.markdown("##### 📜 Quick History Summary")
+                if st.session_state.matrix_history:
+                    st.info(f"Total steps performed: {len(st.session_state.matrix_history)}")
+                else:
+                    st.write("No operations executed yet.")
 
             if st.session_state.matrix_history:
                 st.markdown("---")
-                st.markdown("##### 📜 Step-by-Step Practice History")
+                col_hist_title, col_hist_btn = st.columns([3, 1])
+                with col_hist_title:
+                    st.markdown("##### 📚 Step-by-Step Practice History")
+                with col_hist_btn:
+                    history_text = f"Initial Matrix:\n{str(st.session_state.original_matrix)}\n\n"
+                    for idx, item in enumerate(st.session_state.matrix_history):
+                        history_text += f"Step {idx+1}: {item['operation']}\n{str(item['matrix'])}\n\n"
+                    history_text += f"Final Current Matrix:\n{str(st.session_state.current_matrix)}"
+                    
+                    st.download_button(
+                        label="📥 Download History",
+                        data=history_text,
+                        file_name="matrix_practice_history.txt",
+                        mime="text/plain",
+                        key="download_history_btn"
+                    )
+
                 for idx, item in enumerate(st.session_state.matrix_history):
                     with st.expander(f"Step {idx+1}: {item['operation']}"):
                         st.latex(format_matrix_latex(item['matrix']))
@@ -317,12 +360,11 @@ def render():
         # --- OPTIONAL GEOMETRICAL VISUALIZATION SECTION ---
         if n_vars in [2, 3] and 'last_solved_system' in st.session_state:
             st.markdown("---")
-            with st.expander("📈 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
+            with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 if st.button("Generate Geometry Plot", key="gen_geom_plot"):
                     A_plot, b_plot = st.session_state['last_solved_system']
                     if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
-                        # 2D Plot: Lines intersection
                         fig, ax = plt.subplots(figsize=(6, 6))
                         x_vals = np.linspace(-10, 10, 400)
                         for i in range(len(b_plot)):
@@ -345,7 +387,6 @@ def render():
                         st.pyplot(fig)
                         
                     elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
-                        # 3D Plot: Planes intersection
                         fig = plt.figure(figsize=(8, 6))
                         ax = fig.add_subplot(111, projection='3d')
                         xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
