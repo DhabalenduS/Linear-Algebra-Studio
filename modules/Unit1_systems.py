@@ -293,20 +293,14 @@ def render():
                             key="download_history_pdf"
                         )
                     else:
-                        st.caption("Tip: Install `fpdf2` (`pip install fpdf2`) for PDF export.")
+                        st.caption("Testing: Install `fpdf2` (`pip install fpdf2`) for PDF export.")
 
             if st.session_state.matrix_history:
                 st.markdown("---")
                 st.markdown("##### 📚 Step-by-Step Practice History")
-                
-                # Display initial matrix in text format matching user specification
-                st.text(f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}")
-                
                 for idx, item in enumerate(st.session_state.matrix_history):
-                    step_text = f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}"
-                    st.text(step_text)
-                
-                st.text(f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}")
+                    with st.expander(f"Step {idx+1}: {item['operation']}"):
+                        st.latex(format_matrix_latex(item['matrix']))
 
     # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
     elif selected_tab == "System of Linear Equations":
