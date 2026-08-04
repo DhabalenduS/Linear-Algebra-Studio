@@ -662,7 +662,7 @@ def render():
                             # Use columns to constrain width and center the plot nicely
                             c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
                             with c_plot_m:
-                                fig = plt.figure(figsize=(3.5, 3))  # Compact size to fit viewport perfectly
+                                fig = plt.figure(figsize=(4, 3.5))  # Compact size to fit viewport perfectly
                                 ax = fig.add_subplot(111, projection='3d')
                                 
                                 x_lin = np.linspace(-5, 5, 15)
