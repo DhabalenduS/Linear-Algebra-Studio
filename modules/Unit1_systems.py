@@ -175,8 +175,16 @@ def render():
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
-                    # Setting the default pre-filled value to example_placeholder instead of empty string
-                    row_input = st.text_input(f"Row {i+1} entries", value=example_placeholder, placeholder=f"e.g. {example_placeholder}", key=f"row_{i}", label_visibility="collapsed")
+                    # Fix: Streamlit text_input ignores `placeholder` if `value` is explicitly populated. 
+                    # To show light gray ghost text like "e.g. 1 2 3 4", `value` must be empty `""` 
+                    # and `placeholder` must contain the string.
+                    row_input = st.text_input(
+                        f"Row {i+1} entries", 
+                        value="", 
+                        placeholder=example_placeholder, 
+                        key=f"row_{i}", 
+                        label_visibility="collapsed"
+                    )
                 temp_inputs.append(row_input)
 
             for i, row_input in enumerate(temp_inputs):
@@ -330,20 +338,23 @@ def render():
             with c_inp:
                 r_val = st.text_input(
                     f"R{i+1}", 
-                    value=example_placeholder, 
+                    value="", 
                     placeholder=example_placeholder, 
                     key=f"gauss_a_{i}", 
                     label_visibility="collapsed"
                 )
-            A_rows.append([float(x) for x in r_val.split()])
+            # Fallback if empty so it doesn't crash evaluation if uninitialized
+            row_content = r_val.strip() if r_val.strip() else example_placeholder
+            A_rows.append([float(x) for x in row_content.split()])
             
         st.markdown("##### Constant vector B (space separated)")
         c_lbl_b, c_inp_b, c_space_b = st.columns([0.06, 0.3, 0.64])
         with c_lbl_b:
             st.markdown("**B**")
         with c_inp_b:
-            b_val = st.text_input("Constant vector B", value=" ".join([str(j+1) for j in range(n_vars)]), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
-        b_vec = [float(x) for x in b_val.split()]
+            b_val = st.text_input("Constant vector B", value="", placeholder=" ".join([str(j+1) for j in range(n_vars)]), key="gauss_b", label_visibility="collapsed")
+        b_content = b_val.strip() if b_val.strip() else " ".join([str(j+1) for j in range(n_vars)])
+        b_vec = [float(x) for x in b_content.split()]
         
         if method_choice == "Gauss Elimination":
             if st.button("Run Gauss Solver", type="primary", key="run_gauss"):
