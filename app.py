@@ -1,14 +1,15 @@
 import streamlit as st
-#from modules import Unit1_systems
-from modules.Unit1_systems import render
-render()
+import importlib
 
-# --- Page Configuration ---
+# --- Page Configuration (Must be the first Streamlit command) ---
 st.set_page_config(
     page_title="Linear Algebra Studio",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Dynamically import Unit1_systems module to prevent path/syntax issues
+Unit1_systems = importlib.import_module("modules.Unit1_systems")
 
 # --- Custom Styling ---
 st.markdown("""
@@ -140,3 +141,4 @@ elif st.session_state.active_unit == "Unit-V":
 elif st.session_state.active_unit == "Unit-VI":
     st.header("Unit-VI: Applications")
     st.info("Sub-modules for SVD, PCA, and Differential Equations are under development.")
+```[cite: 2]
