@@ -367,7 +367,8 @@ def render():
                     st.markdown("##### Automated Execution Steps")
                     
                     # Step 0
-                    st.markdown(f"**Step 0 Augmented matrix [A|B] =**")
+                    st.markdown("**Step 0 Augmented matrix**")
+                    st.markdown("$[A|B] =$")
                     st.latex(format_matrix_latex(aug))
                     
                     curr = aug.copy()
@@ -379,7 +380,8 @@ def render():
                                 if curr[r, i] != 0:
                                     op_desc = f"R{i+1} <-> R{r+1}"
                                     curr[[i, r]] = curr[[r, i]]
-                                    st.markdown(f"**Step {step_count} Matrix:** `~{op_desc}`")
+                                    st.markdown(f"**Step {step_count} Applying {op_desc}**")
+                                    st.markdown(f"~")
                                     st.latex(format_matrix_latex(curr))
                                     step_count += 1
                                     break
@@ -394,7 +396,8 @@ def render():
                                 
                                 op_desc = f"R{j+1} -> R{j+1} - {f_str}*R{i+1}"
                                 curr[j] = curr[j] - factor * curr[i]
-                                st.markdown(f"**Step {step_count} Matrix:** `~{op_desc}`")
+                                st.markdown(f"**Step {step_count} Applying {op_desc}**")
+                                st.markdown(f"~")
                                 st.latex(format_matrix_latex(curr))
                                 step_count += 1
                         
