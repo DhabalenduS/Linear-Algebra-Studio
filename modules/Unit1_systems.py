@@ -462,7 +462,7 @@ def render():
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 if st.button("Generate Geometry Plot", key="gen_geom_plot"):
-                    A_plot, b_plot = st.session_state['last_solved_system']
+                    A_plot, b_plot = st.session_state['last_solved_sequence'] if 'last_solved_sequence' in st.session_state else st.session_state['last_solved_system']
                     if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
                         fig, ax = plt.subplots(figsize=(6, 6))
                         x_vals = np.linspace(-10, 10, 400)
@@ -482,19 +482,16 @@ def render():
                         ax.set_ylim(-10, 10)
                         ax.grid(True, linestyle='--', alpha=0.6)
                         ax.legend()
-                        st.set_title("Geometrical Interpretation (2D Lines)")
+                        ax.set_title("Geometrical Interpretation (2D Lines)")
                         st.pyplot(fig)
                         
                     elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
                         fig = plt.figure(figsize=(8, 6))
                         ax = fig.add_subplot(111, projection='3d')
-                        xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
-                        for i in range(min(3, len(b_plot))):
-                            a, b, c = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
                         ax.set_xlabel("X-axis")
                         ax.set_ylabel("Y-axis")
                         ax.set_zlabel("Z-axis")
-                        st.set_title("Geometrical Interpretation (3D Planes)")
+                        ax.set_title("Geometrical Interpretation (3D Planes)")
                         st.pyplot(fig)
                     else:
                         st.warning("Visualization is optimized for 2 or 3 variable systems.")
