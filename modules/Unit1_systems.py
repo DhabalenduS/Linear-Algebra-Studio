@@ -77,7 +77,7 @@ def matrix_to_pretty_string(mat):
 def render():
     st.markdown("""
         <style>
-        /* Force buttons and text inputs to have a compact, professional width */
+        /* Force buttons and text inputs to have a professional, compact width */
         div.stButton > button {
             width: auto !important;
             display: inline-block !important;
@@ -86,11 +86,10 @@ def render():
             font-size: 0.9rem !important;
             border-radius: 4px;
         }
-        /* Limit text input field widths so they aren't overly lengthy */
-        div.stTextInput > div.st-bx, div.stTextInput input {
+        /* Constrain text input width for professional alignment */
+        div.stTextInput input {
             max-width: 320px !important;
         }
-        /* Limit number input containers for rows/columns */
         div.stNumberInput {
             max-width: 180px !important;
         }
@@ -166,7 +165,12 @@ def render():
             temp_inputs = []
             for i in range(rows):
                 default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
-                row_input = st.text_input(f"Row {i+1}", value=default_val, key=f"row_{i}")
+                # Use custom columns to place label and input side-by-side compactly
+                c_lbl, c_inp = st.columns([0.1, 0.9])
+                with c_lbl:
+                    st.markdown(f"**R{i+1}**")
+                with c_inp:
+                    row_input = st.text_input(f"Row {i+1} entries", value=default_val, key=f"row_{i}", label_visibility="collapsed")
                 temp_inputs.append(row_input)
 
             for i, row_input in enumerate(temp_inputs):
@@ -183,7 +187,6 @@ def render():
                     valid_input = False
                     input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
 
-            # Display instant warnings right here above the initialize button
             if input_warnings:
                 st.markdown("")
                 for warn in input_warnings:
@@ -459,10 +462,6 @@ def render():
                         xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
                         for i in range(min(3, len(b_plot))):
                             a, b, c = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
-                            d = b_plot[i]
-                            if c != 0:
-                                zz = (d - a * xx - b * yy) / c
-                                ax.plot_surface(xx, yy, zz, alpha=0.5, label=f"Plane {i+1}")
                         ax.set_xlabel("X-axis")
                         ax.set_ylabel("Y-axis")
                         ax.set_zlabel("Z-axis")
