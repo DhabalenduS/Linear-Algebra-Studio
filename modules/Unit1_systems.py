@@ -28,29 +28,24 @@ def format_matrix_latex(mat):
     return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
 
 def format_augmented_matrix_latex(mat):
-    """Formats an augmented matrix using standard vertical dots/vdots separator or standard vertical line with proper matrix brackets."""
+    """Formats an augmented matrix using a clean vertical line separator."""
     latex_rows = []
     ncols = mat.shape[1]
     for row in mat:
         row_elems = []
-        for idx, val in enumerate(row):
+        for val in row:
             try:
                 f = Fraction(val).limit_denominator()
                 if f.denominator == 1:
-                    val_str = str(f.numerator)
+                    row_elems.append(str(f.numerator))
                 else:
-                    val_str = f"\\frac{{{f.numerator}}}{{{f.denominator}}}"
+                    row_elems.append(f"\\frac{{{f.numerator}}}{{{f.denominator}}}")
             except:
-                val_str = str(val)
-            
-            if idx == ncols - 2:
-                row_elems.append(f"{val_str} \\vdots")
-            else:
-                row_elems.append(val_str)
+                row_elems.append(str(val))
         latex_rows.append(" & ".join(row_elems))
     
-    col_format = "c" * (ncols - 1) + " c " + "c"
-    return f"\\begin{{bmatrix}}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
+    col_format = "c" * (ncols - 1) + " | c"
+    return f"\\begin{{array}}{{@{col_format}@}}\n" + " \\\\\n".join(latex_rows) + "\n\\end{array}"
 
 def perform_row_operation(A, op_str):
     op_str = op_str.replace(" ", "")
