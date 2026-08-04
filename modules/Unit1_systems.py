@@ -361,7 +361,6 @@ def render():
                     
                     st.markdown("##### Automated Execution Steps")
                     
-                    # (i) Fix: Include Step 0 title/label clearly and combine with matrix using proper LaTeX block formatting
                     st.markdown("Step 0 Augmented matrix:")
                     st.latex(f"[A|B] = " + format_matrix_latex(aug))
                     
@@ -387,17 +386,64 @@ def render():
                                 else:
                                     f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
                                 
-                                # (ii) Fix: Use proper subscript formatting in LaTeX for row variables (e.g., R_{2} \rightarrow R_{2} - 1R_{1})
                                 op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
                                 curr[j] = curr[j] - factor * curr[i]
                                 st.markdown(f"Step {step_count} Applying ${op_desc}$")
                                 st.latex(f"\\sim " + format_matrix_latex(curr))
                                 step_count += 1
-                        
-                    x = np.zeros(n_vars)
-                    for i in range(n_vars - 1, -1, -1):
-                        x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
-                    st.success(f"Final Solution Vector X: {x}")
+                    
+                    # Back-Substitution Calculation & Display steps
+                    st.markdown("---")
+                    st.markdown("##### Back-Substitution Steps")
+                    
+                    # Check rank of A vs Augmented to see if unique/infinite/none
+                    rank_A = np.linalg.matrix_rank(curr[:, :-1])
+                    rank_aug = np.linalg.matrix_rank(curr)
+                    num_rows, num_cols = curr.shape
+                    num_vars_local = num_cols - 1
+                    
+                    if rank_A < rank_aug:
+                        st.error("The system is inconsistent (No solution exists).")
+                    elif rank_A < num_vars_local:
+                        st.warning("The system has infinitely many solutions. Parametric back-substitution applies:")
+                        # Show row equations for clarity
+                        for r_idx in range(num_rows):
+                            row_vals = curr[r_idx, :-1]
+                            rhs_val = curr[r_idx, -1]
+                            if not np.allclose(row_vals, 0):
+                                non_zero_elems = [f"{row_vals[c]}x_{{ {c+1} }}" for c in range(len(row_vals)) if row_vals[c] != 0]
+                                eq_str = " + ".join(non_zero_elems) + f" = {rhs_val}"
+                                st.latex(eq_str)
+                    else:
+                        x = np.zeros(n_vars)
+                        for i in range(n_vars - 1, -1, -1):
+                            sub_sum = 0
+                            sub_terms = []
+                            for k in range(i + 1, n_vars):
+                                val_k = curr[i, k]
+                                if not np.isclose(val_k, 0):
+                                    sub_sum += val_k * x[k]
+                                    f_sub = Fraction(val_k).limit_denominator()
+                                    f_sub_str = str(f_sub) if f_sub.denominator == 1 else f"\\frac{{{f_sub.numerator}}}{{{f_sub.denominator}}}"
+                                    sub_terms.append(f"{f_sub_str} x_{{ {k+1} }}")
+                            
+                            rhs_val = curr[i, -1]
+                            diag_val = curr[i, i]
+                            numer = rhs_val - sub_sum
+                            x[i] = numer / diag_val
+                            
+                            f_diag = Fraction(diag_val).limit_denominator()
+                            f_rhs = Fraction(rhs_val).limit_denominator()
+                            f_diag_str = str(f_diag) if f_diag.denominator == 1 else f"\\frac{{{f_diag.numerator}}}{{{f_diag.denominator}}}"
+                            f_rhs_str = str(f_rhs) if f_rhs.denominator == 1 else f"\\frac{{{f_rhs.numerator}}}{{{f_rhs.denominator}}}"
+                            
+                            step_eq = f"x_{{ {i+1} }} = \\frac{{{f_rhs_str}"
+                            if sub_terms:
+                                step_eq += " - " + " - ".join(sub_terms)
+                            step_eq += f"}} {{{f_diag_str}}} = {x[i]:.4g}"
+                            st.latex(step_eq)
+                            
+                        st.success(f"Final Solution Vector X: {x}")
                     st.session_state['last_solved_system'] = (A_mat, b_col)
             else:
                 st.markdown("##### Manual Gauss Elimination Workspace")
