@@ -77,10 +77,14 @@ def matrix_to_pretty_string(mat):
 def render():
     st.markdown("""
         <style>
+        /* Restrict button widths to content size and make them look professional */
         div.stButton > button {
-            width: auto;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
+            width: fit-content !important;
+            padding-left: 1.2rem;
+            padding-right: 1.2rem;
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
+            border-radius: 6px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -148,6 +152,8 @@ def render():
             st.markdown("##### Step 1: Define Matrix Entries (by space separated entries)")
             entered_rows = []
             valid_input = True
+            input_errors = []
+
             for i in range(rows):
                 default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
                 row_input = st.text_input(f"Row {i+1}", value=default_val, key=f"row_{i}")
@@ -155,9 +161,16 @@ def render():
                     row_vals = [Fraction(x) for x in row_input.strip().split()]
                     if len(row_vals) != cols:
                         valid_input = False
+                        input_errors.append(f"Row {i+1} has {len(row_vals)} elements, but {cols} columns are required.")
                     entered_rows.append(row_vals)
-                except:
+                except Exception:
                     valid_input = False
+                    input_errors.append(f"Row {i+1} contains invalid numeric entries or formatting.")
+
+            # Display real-time validation warnings immediately if entries don't match dimensions
+            if not valid_input:
+                for err in input_errors:
+                    st.warning(f"⚠️ {err}")
                     
             if st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init"):
                 if valid_input:
@@ -167,7 +180,7 @@ def render():
                     st.session_state.matrix_history = []
                     st.rerun()
                 else:
-                    st.error(f"Ensure every row contains exactly {cols} space-separated numbers/fractions.")
+                    st.error("Please fix the row length and formatting errors highlighted above before initializing.")
         else:
             st.markdown("---")
             m_col1, m_col2 = st.columns(2)
@@ -217,14 +230,13 @@ def render():
                 if st.session_state.matrix_history:
                     st.markdown("##### 📥 Export History")
                     
-                    # Build clean text log matching screen display format
                     history_text = f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}\n\n"
                     for idx, item in enumerate(st.session_state.matrix_history):
                         history_text += f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}\n\n"
                     history_text += f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}"
                     
                     st.download_button(
-                        label="📄 Download as Text (.txt)",
+                        label="📄 Download Text (.txt)",
                         data=history_text,
                         file_name="matrix_practice_history.txt",
                         mime="text/plain",
@@ -243,14 +255,14 @@ def render():
                             
                         pdf_bytes = bytes(pdf.output())
                         st.download_button(
-                            label="📥 Download as PDF (.pdf)",
+                            label="📥 Download PDF (.pdf)",
                             data=pdf_bytes,
                             file_name="matrix_practice_history.pdf",
                             mime="application/pdf",
                             key="download_history_pdf"
                         )
                     else:
-                        st.caption("Tip: Install `fpdf2` (`pip install fpdf2`) to enable direct PDF downloads.")
+                        st.caption("Tip: Install `fpdf2` (`pip install fpdf2`) for PDF export.")
 
             if st.session_state.matrix_history:
                 st.markdown("---")
@@ -446,10 +458,10 @@ def render():
         
         col_m1, col_m2 = st.columns(2)
         with col_m1:
-            st.markdown("##### Matrix A Input")
+            st.markdown("##### Matrix A Input Validation")
             a_input = st.text_area("Row-by-row values for A (comma separated rows)", value="1, 2\n3, 4", key="mat_a_val")
         with col_m2:
-            st.markdown("##### Matrix B Input")
+            st.markdown("##### Matrix B Input Validation")
             b_input = st.text_area("Row-by-row values for B (comma separated rows)", value="5, 6\n7, 8", key="mat_b_val")
             
         if st.button("Compute Products & Inverses", type="primary", key="calc_mult"):
