@@ -175,6 +175,7 @@ def render():
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
+                    # Setting the default pre-filled value to example_placeholder instead of empty string
                     row_input = st.text_input(f"Row {i+1} entries", value=example_placeholder, placeholder=f"e.g. {example_placeholder}", key=f"row_{i}", label_visibility="collapsed")
                 temp_inputs.append(row_input)
 
@@ -462,7 +463,7 @@ def render():
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 if st.button("Generate Geometry Plot", key="gen_geom_plot"):
-                    A_plot, b_plot = st.session_state['last_solved_sequence'] if 'last_solved_sequence' in st.session_state else st.session_state['last_solved_system']
+                    A_plot, b_plot = st.session_state['last_solved_system']
                     if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
                         fig, ax = plt.subplots(figsize=(6, 6))
                         x_vals = np.linspace(-10, 10, 400)
