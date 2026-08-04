@@ -77,7 +77,6 @@ def matrix_to_pretty_string(mat):
 def render():
     st.markdown("""
         <style>
-        /* Force buttons and text inputs to have a professional, compact width */
         div.stButton > button {
             width: auto !important;
             display: inline-block !important;
@@ -86,14 +85,12 @@ def render():
             font-size: 0.9rem !important;
             border-radius: 4px;
         }
-        /* Constrain text input width to half and ensure left alignment */
         div.stTextInput input {
             max-width: 160px !important;
         }
         div.stNumberInput {
             max-width: 180px !important;
         }
-        /* Limit selectbox width to 1/4 (approx 250px or responsive constraint) */
         div.stSelectbox {
             max-width: 250px !important;
         }
@@ -302,8 +299,6 @@ def render():
                             mime="application/pdf",
                             key="download_history_pdf"
                         )
-                    else:
-                        st.caption("Testing: Install `fpdf2` (`pip install fpdf2`) for PDF export.")
 
             if st.session_state.matrix_history:
                 st.markdown("---")
@@ -366,8 +361,8 @@ def render():
                     
                     st.markdown("##### Automated Execution Steps")
                     
-                    # Step 0
-                    st.markdown("**Step 0 Augmented matrix**")
+                    # Step 0 exact requested text layout
+                    st.markdown("Step 0 Augmented matrix =")
                     st.markdown("$[A|B] =$")
                     st.latex(format_matrix_latex(aug))
                     
@@ -380,8 +375,8 @@ def render():
                                 if curr[r, i] != 0:
                                     op_desc = f"R{i+1} <-> R{r+1}"
                                     curr[[i, r]] = curr[[r, i]]
-                                    st.markdown(f"**Step {step_count} Applying {op_desc}**")
-                                    st.markdown(f"~")
+                                    st.markdown(f"Step {step_count} Applying {op_desc}")
+                                    st.markdown("~")
                                     st.latex(format_matrix_latex(curr))
                                     step_count += 1
                                     break
@@ -396,8 +391,8 @@ def render():
                                 
                                 op_desc = f"R{j+1} -> R{j+1} - {f_str}*R{i+1}"
                                 curr[j] = curr[j] - factor * curr[i]
-                                st.markdown(f"**Step {step_count} Applying {op_desc}**")
-                                st.markdown(f"~")
+                                st.markdown(f"Step {step_count} Applying {op_desc}")
+                                st.markdown("~")
                                 st.latex(format_matrix_latex(curr))
                                 step_count += 1
                         
