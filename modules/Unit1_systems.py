@@ -361,7 +361,8 @@ def render():
                     
                     st.markdown("##### Automated Execution Steps")
                     
-                    # Step 0 using single LaTeX expression so [A|B] = matrix is completely rendered on the same line/block without breaks
+                    # (i) Fix: Include Step 0 title/label clearly and combine with matrix using proper LaTeX block formatting
+                    st.markdown("Step 0 Augmented matrix:")
                     st.latex(f"[A|B] = " + format_matrix_latex(aug))
                     
                     curr = aug.copy()
@@ -371,9 +372,9 @@ def render():
                         if curr[i, i] == 0:
                             for r in range(i+1, n_vars):
                                 if curr[r, i] != 0:
-                                    op_desc = f"R{i+1} <-> R{r+1}"
+                                    op_desc = f"R_{{ {i+1} }} \\leftrightarrow R_{{ {r+1} }}"
                                     curr[[i, r]] = curr[[r, i]]
-                                    st.markdown(f"Step {step_count} Applying {op_desc}")
+                                    st.markdown(f"Step {step_count} Applying ${op_desc}$")
                                     st.latex(f"\\sim " + format_matrix_latex(curr))
                                     step_count += 1
                                     break
@@ -386,7 +387,8 @@ def render():
                                 else:
                                     f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
                                 
-                                op_desc = f"R{j+1} \\rightarrow R{j+1} - {f_str}R{i+1}"
+                                # (ii) Fix: Use proper subscript formatting in LaTeX for row variables (e.g., R_{2} \rightarrow R_{2} - 1R_{1})
+                                op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
                                 curr[j] = curr[j] - factor * curr[i]
                                 st.markdown(f"Step {step_count} Applying ${op_desc}$")
                                 st.latex(f"\\sim " + format_matrix_latex(curr))
