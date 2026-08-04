@@ -141,4 +141,3 @@ elif st.session_state.active_unit == "Unit-V":
 elif st.session_state.active_unit == "Unit-VI":
     st.header("Unit-VI: Applications")
     st.info("Sub-modules for SVD, PCA, and Differential Equations are under development.")
-```[cite: 2]
