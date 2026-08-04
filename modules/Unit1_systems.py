@@ -659,10 +659,9 @@ def render():
                             st.pyplot(fig)
                             
                         elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
-                            # Use columns to constrain width and center the plot nicely
                             c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
                             with c_plot_m:
-                                fig = plt.figure(figsize=(4, 3.5))  # Compact size to fit viewport perfectly
+                                fig = plt.figure(figsize=(3.5, 3))
                                 ax = fig.add_subplot(111, projection='3d')
                                 
                                 x_lin = np.linspace(-5, 5, 15)
@@ -673,10 +672,14 @@ def render():
                                 for i in range(len(b_plot)):
                                     a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
                                     c = b_plot[i]
+                                    
+                                    # Format equation string for legend label
+                                    eq_label = f"Eq {i+1}: {int(a1) if a1.is_integer() else a1}x + {int(a2) if a2.is_integer() else a2}y + {int(a3) if a3.is_integer() else a3}z = {int(c) if c.is_integer() else c}"
+                                    
                                     if not np.isclose(a3, 0):
                                         Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
                                         Z_grid = np.clip(Z_grid, -20, 20)
-                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=f"Eq {i+1}")
+                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=eq_label)
                                     else:
                                         st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
                                 
@@ -691,6 +694,9 @@ def render():
                                 ax.set_zlabel("Z", fontsize=7)
                                 ax.tick_params(axis='both', which='major', labelsize=6)
                                 ax.set_title("3D Planes Intersection", fontsize=8)
+                                
+                                # Add legend with equation labels adjusted for size
+                                ax.legend(loc='upper left', fontsize=5, framealpha=0.7)
                                 st.pyplot(fig)
                         else:
                             st.warning("Visualization is optimized for 2 or 3 variable systems.")
