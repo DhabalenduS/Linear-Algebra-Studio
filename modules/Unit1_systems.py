@@ -557,10 +557,10 @@ def render():
             col_a_init, col_b_init = st.columns(2)
             with col_a_init:
                 st.markdown("Coefficient Matrix:")
-                st.latex(format_matrix_latex(A_curr))
+                st.latex(f"A = {format_matrix_latex(A_curr)}")
             with col_b_init:
                 st.markdown("Constant Vector:")
-                st.latex(format_matrix_latex(b_curr.reshape(-1, 1)))
+                st.latex(f"B = {format_matrix_latex(b_curr.reshape(-1, 1))}")
             
             st.markdown("##### 2. Decomposition Strategy")
             st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $Ly = B$ for $y$, then $UX = y$ for $X$.")
@@ -609,10 +609,10 @@ def render():
                 col_l1, col_l2 = st.columns(2)
                 with col_l1:
                     st.markdown("Lower Triangular Matrix:")
-                    st.latex(format_matrix_latex(L))
+                    st.latex(f"L = {format_matrix_latex(L)}")
                 with col_l2:
                     st.markdown("Upper Triangular Matrix:")
-                    st.latex(format_matrix_latex(U))
+                    st.latex(f"U = {format_matrix_latex(U)}")
 
                 st.markdown("---")
                 if "(ii)" in sub_option:
