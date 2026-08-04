@@ -165,7 +165,6 @@ def render():
 
             temp_inputs = []
             for i in range(rows):
-                # Start completely empty by default so there is no leftover or default data/warnings
                 c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
@@ -192,7 +191,6 @@ def render():
                     valid_input = False
                     input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
 
-            # Only show warnings if the user has typed something invalid, keeping initial state clean
             if not has_empty_inputs and input_warnings:
                 st.markdown("")
                 for warn in input_warnings:
