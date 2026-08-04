@@ -27,6 +27,31 @@ def format_matrix_latex(mat):
         latex_rows.append(" & ".join(row_elems))
     return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
 
+def format_augmented_matrix_latex(mat):
+    """Formats an augmented matrix with a vertical line separating the coefficient matrix and constant vector."""
+    latex_rows = []
+    ncols = mat.shape[1]
+    for row in mat:
+        row_elems = []
+        for idx, val in enumerate(row):
+            try:
+                f = Fraction(val).limit_denominator()
+                if f.denominator == 1:
+                    val_str = str(f.numerator)
+                else:
+                    val_str = f"\\frac{{{f.numerator}}}{{{f.denominator}}}"
+            except:
+                val_str = str(val)
+            
+            if idx == ncols - 2:
+                row_elems.append(f"{val_str} \\vline")
+            else:
+                row_elems.append(val_str)
+        latex_rows.append(" & ".join(row_elems))
+    
+    col_format = "c" * (ncols - 1) + "|c"
+    return f"\\begin{{array}}{{{col_format}}}\n" + " \\\\\n".join(latex_rows) + "\n\\end{array}"
+
 def perform_row_operation(A, op_str):
     op_str = op_str.replace(" ", "")
     swap_match = re.match(r"R(\d+)<->R(\d+)", op_str)
@@ -362,7 +387,7 @@ def render():
                     st.markdown("##### Automated Execution Steps")
                     
                     st.markdown("Step 0 Augmented matrix:")
-                    st.latex(f"[A|B] = " + format_matrix_latex(aug))
+                    st.latex(f"[A|B] = \\left[ {format_augmented_matrix_latex(aug)} \\right]")
                     
                     curr = aug.copy()
                     step_count = 1
@@ -374,7 +399,7 @@ def render():
                                     op_desc = f"R_{{ {i+1} }} \\leftrightarrow R_{{ {r+1} }}"
                                     curr[[i, r]] = curr[[r, i]]
                                     st.markdown(f"Step {step_count} Applying ${op_desc}$")
-                                    st.latex(f"\\sim " + format_matrix_latex(curr))
+                                    st.latex(f"\\sim \\left[ {format_augmented_matrix_latex(curr)} \\right]")
                                     step_count += 1
                                     break
                         for j in range(i+1, n_vars):
@@ -389,14 +414,13 @@ def render():
                                 op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
                                 curr[j] = curr[j] - factor * curr[i]
                                 st.markdown(f"Step {step_count} Applying ${op_desc}$")
-                                st.latex(f"\\sim " + format_matrix_latex(curr))
+                                st.latex(f"\\sim \\left[ {format_augmented_matrix_latex(curr)} \\right]")
                                 step_count += 1
                     
                     # Back-Substitution Calculation & Display steps
                     st.markdown("---")
                     st.markdown("##### Back-Substitution Steps")
                     
-                    # Check rank of A vs Augmented to see if unique/infinite/none
                     rank_A = np.linalg.matrix_rank(curr[:, :-1])
                     rank_aug = np.linalg.matrix_rank(curr)
                     num_rows, num_cols = curr.shape
@@ -406,7 +430,6 @@ def render():
                         st.error("The system is inconsistent (No solution exists).")
                     elif rank_A < num_vars_local:
                         st.warning("The system has infinitely many solutions. Parametric back-substitution applies:")
-                        # Show row equations for clarity
                         for r_idx in range(num_rows):
                             row_vals = curr[r_idx, :-1]
                             rhs_val = curr[r_idx, -1]
@@ -478,10 +501,10 @@ def render():
                     mg_col1, mg_col2 = st.columns(2)
                     with mg_col1:
                         st.markdown("##### 📌 Initial Augmented Matrix $[A | B]$")
-                        st.latex(format_matrix_latex(st.session_state.manual_gauss_orig))
+                        st.latex(f"\\left[ {format_augmented_matrix_latex(st.session_state.manual_gauss_orig)} \\right]")
                     with mg_col2:
                         st.markdown("##### 🔄 Current Augmented Matrix State")
-                        st.latex(format_matrix_latex(st.session_state.manual_gauss_curr))
+                        st.latex(f"\\left[ {format_augmented_matrix_latex(st.session_state.manual_gauss_curr)} \\right]")
                     st.markdown("---")
 
                     st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
@@ -521,7 +544,7 @@ def render():
                         st.markdown("##### 📚 Manual Step-by-Step History")
                         for idx, item in enumerate(st.session_state.manual_gauss_history):
                             with st.expander(f"Step {idx+1}: {item['operation']}"):
-                                st.latex(format_matrix_latex(item['matrix']))
+                                st.latex(f"\\left[ {format_augmented_matrix_latex(item['matrix'])} \\right]")
                 else:
                     st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
                 
