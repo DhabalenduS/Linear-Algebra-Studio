@@ -361,9 +361,8 @@ def render():
                     
                     st.markdown("##### Automated Execution Steps")
                     
-                    # Step 0 combined into one tight block using LaTeX or inline markdown to prevent wide gaps
-                    st.markdown("Step 0 Augmented matrix $[A|B] =$")
-                    st.latex(format_matrix_latex(aug))
+                    # Step 0 using single LaTeX expression so [A|B] = matrix is completely rendered on the same line/block without breaks
+                    st.latex(f"[A|B] = " + format_matrix_latex(aug))
                     
                     curr = aug.copy()
                     step_count = 1
@@ -374,8 +373,8 @@ def render():
                                 if curr[r, i] != 0:
                                     op_desc = f"R{i+1} <-> R{r+1}"
                                     curr[[i, r]] = curr[[r, i]]
-                                    st.markdown(f"Step {step_count} Applying {op_desc}  \n~")
-                                    st.latex(format_matrix_latex(curr))
+                                    st.markdown(f"Step {step_count} Applying {op_desc}")
+                                    st.latex(f"\\sim " + format_matrix_latex(curr))
                                     step_count += 1
                                     break
                         for j in range(i+1, n_vars):
@@ -387,10 +386,10 @@ def render():
                                 else:
                                     f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
                                 
-                                op_desc = f"R{j+1} -> R{j+1} - {f_str}*R{i+1}"
+                                op_desc = f"R{j+1} \\rightarrow R{j+1} - {f_str}R{i+1}"
                                 curr[j] = curr[j] - factor * curr[i]
-                                st.markdown(f"Step {step_count} Applying {op_desc}  \n~")
-                                st.latex(format_matrix_latex(curr))
+                                st.markdown(f"Step {step_count} Applying ${op_desc}$")
+                                st.latex(f"\\sim " + format_matrix_latex(curr))
                                 step_count += 1
                         
                     x = np.zeros(n_vars)
