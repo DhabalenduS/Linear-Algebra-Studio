@@ -167,7 +167,7 @@ def render():
             input_warnings = []
             has_empty_inputs = False
 
-            example_placeholder = " ".join(str(j) for j in range(1, cols + 1))
+            example_placeholder = "e.g. " + " ".join(str(j) for j in range(1, cols + 1))
 
             temp_inputs = []
             for i in range(rows):
@@ -175,9 +175,6 @@ def render():
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
-                    # Fix: Streamlit text_input ignores `placeholder` if `value` is explicitly populated. 
-                    # To show light gray ghost text like "e.g. 1 2 3 4", `value` must be empty `""` 
-                    # and `placeholder` must contain the string.
                     row_input = st.text_input(
                         f"Row {i+1} entries", 
                         value="", 
@@ -329,7 +326,7 @@ def render():
         
         st.markdown("##### Enter Coefficient Matrix A (space separated)")
         
-        example_placeholder = " ".join(str(j+1) for j in range(n_vars))
+        example_placeholder = "e.g. " + " ".join(str(j+1) for j in range(n_vars))
         A_rows = []
         for i in range(n_vars):
             c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
@@ -343,8 +340,7 @@ def render():
                     key=f"gauss_a_{i}", 
                     label_visibility="collapsed"
                 )
-            # Fallback if empty so it doesn't crash evaluation if uninitialized
-            row_content = r_val.strip() if r_val.strip() else example_placeholder
+            row_content = r_val.strip() if r_val.strip() else " ".join(str(j+1) for j in range(n_vars))
             A_rows.append([float(x) for x in row_content.split()])
             
         st.markdown("##### Constant vector B (space separated)")
@@ -352,7 +348,7 @@ def render():
         with c_lbl_b:
             st.markdown("**B**")
         with c_inp_b:
-            b_val = st.text_input("Constant vector B", value="", placeholder=" ".join([str(j+1) for j in range(n_vars)]), key="gauss_b", label_visibility="collapsed")
+            b_val = st.text_input("Constant vector B", value="", placeholder="e.g. " + " ".join([str(j+1) for j in range(n_vars)]), key="gauss_b", label_visibility="collapsed")
         b_content = b_val.strip() if b_val.strip() else " ".join([str(j+1) for j in range(n_vars)])
         b_vec = [float(x) for x in b_content.split()]
         
