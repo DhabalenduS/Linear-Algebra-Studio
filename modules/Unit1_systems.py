@@ -28,7 +28,7 @@ def format_matrix_latex(mat):
     return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
 
 def format_augmented_matrix_latex(mat):
-    """Formats an augmented matrix using a clean vertical line separator."""
+    """Formats an augmented matrix using a clean vertical line separator enclosed in standard brackets."""
     latex_rows = []
     ncols = mat.shape[1]
     for row in mat:
@@ -45,7 +45,7 @@ def format_augmented_matrix_latex(mat):
         latex_rows.append(" & ".join(row_elems))
     
     col_format = "c" * (ncols - 1) + " | c"
-    return f"\\begin{{array}}{{@{col_format}@}}\n" + " \\\\\n".join(latex_rows) + "\n\\end{array}"
+    return f"\\left[\\begin{{array}}{{{col_format}}}\n" + " \\\\\n".join(latex_rows) + "\n\\end{array}\\right]"
 
 def perform_row_operation(A, op_str):
     op_str = op_str.replace(" ", "")
