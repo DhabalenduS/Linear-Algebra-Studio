@@ -175,7 +175,7 @@ def render():
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
-                    row_input = st.text_input(f"Row {i+1} entries", value="", placeholder=f"e.g. {example_placeholder}", key=f"row_{i}", label_visibility="collapsed")
+                    row_input = st.text_input(f"Row {i+1} entries", value=example_placeholder, placeholder=f"e.g. {example_placeholder}", key=f"row_{i}", label_visibility="collapsed")
                 temp_inputs.append(row_input)
 
             for i, row_input in enumerate(temp_inputs):
@@ -329,7 +329,7 @@ def render():
             with c_inp:
                 r_val = st.text_input(
                     f"R{i+1}", 
-                    value=" ".join([str(j+1 if j==i else 0) for j in range(n_vars)]), 
+                    value=example_placeholder, 
                     placeholder=example_placeholder, 
                     key=f"gauss_a_{i}", 
                     label_visibility="collapsed"
@@ -341,7 +341,7 @@ def render():
         with c_lbl_b:
             st.markdown("**B**")
         with c_inp_b:
-            b_val = st.text_input("Constant vector B", value=" ".join(["1"] * n_vars), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
+            b_val = st.text_input("Constant vector B", value=" ".join([str(j+1) for j in range(n_vars)]), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
         b_vec = [float(x) for x in b_val.split()]
         
         if method_choice == "Gauss Elimination":
@@ -482,6 +482,7 @@ def render():
                         ax.set_ylim(-10, 10)
                         ax.grid(True, linestyle='--', alpha=0.6)
                         ax.legend()
+                        st.set_title("Geometrical Interpretation (2D Lines)")
                         st.pyplot(fig)
                         
                     elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
@@ -493,7 +494,7 @@ def render():
                         ax.set_xlabel("X-axis")
                         ax.set_ylabel("Y-axis")
                         ax.set_zlabel("Z-axis")
-                        ax.set_title("Geometrical Interpretation (3D Planes)")
+                        st.set_title("Geometrical Interpretation (3D Planes)")
                         st.pyplot(fig)
                     else:
                         st.warning("Visualization is optimized for 2 or 3 variable systems.")
