@@ -629,11 +629,11 @@ def render():
                     for i in range(n):
                         row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else L[i, j]) for j in range(n)])
                         ly_rows.append(f"{row_str} \\\\")
-                    # FIXED: Use "\n".join instead of " ".join so LaTeX correctly interprets matrix row breaks
                     ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
                     
-                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{{bmatrix}}"
-                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{{bmatrix}}"
+                    # FIXED: Changed double curly braces \end{{bmatrix}} to single \end{bmatrix}
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
                     
                     st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
                     
@@ -659,11 +659,11 @@ def render():
                     for i in range(n):
                         row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else U[i, j]) for j in range(n)])
                         ux_rows.append(f"{row_str} \\\\")
-                    # FIXED: Use "\n".join instead of " ".join here as well
                     ux_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ux_rows) + f"\n\\end{{bmatrix}}"
                     
-                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{{bmatrix}}"
-                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{{bmatrix}}"
+                    # FIXED: Changed double curly braces \end{{bmatrix}} to single \end{bmatrix}
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{bmatrix}"
                     
                     st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
                     
