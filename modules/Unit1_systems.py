@@ -650,7 +650,7 @@ def render():
                         else:
                             st.latex(f"y_{{ {i+1} }} = {int(y[i]) if y[i].is_integer() else y[i]}")
                             
-                    st.markdown(f"**Intermediate Vector $Y = \\begin{{bmatrix}} " + " & ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{{bmatrix}}^T$**")
+                    st.latex(r"Y = " + format_matrix_latex(y.reshape(-1, 1)) + r"^T")
 
                 elif "(iii)" in sub_option:
                     st.markdown("**Step 3: Back Substitution ($UX = Y$):**")
@@ -669,7 +669,7 @@ def render():
                     for i in range(n - 1, -1, -1):
                         st.latex(f"x_{{ {i+1} }} = {int(x[i]) if x[i].is_integer() else round(x[i], 4)}")
                         
-                    st.markdown(f"**Final Solution Vector $X = \\begin{{bmatrix}} " + " & ".join([str(int(val) if val.is_integer() else round(val, 4)) for val in x]) + " \\end{{bmatrix}}^T$**")
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)) + r"^T")
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
                 try:
@@ -804,4 +804,3 @@ def render():
                         st.warning("Matrix B is not square or is non-invertible (singular).")
             except Exception as e:
                 st.error(f"Computation error: {e}. Check input dimensions.")
-
