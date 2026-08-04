@@ -321,7 +321,7 @@ def render():
         n_vars = st.number_input("Number of variables", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
         # (iii) Enter Coefficient Matrix A and Vector B description update
-        st.markdown("##### Enter Coefficient Matrix A and Vector B (space separated)")
+        st.markdown("##### Enter Coefficient Matrix A (space separated)")
         
         example_placeholder = " ".join(str(j+1) for j in range(n_vars))
         A_rows = []
