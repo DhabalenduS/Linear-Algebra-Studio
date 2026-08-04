@@ -543,7 +543,7 @@ def render():
                         st.markdown("##### 📚 Manual Step-by-Step History")
                         for idx, item in enumerate(st.session_state.manual_gauss_history):
                             with st.expander(f"Step {idx+1}: {item['operation']}"):
-                                st.latex(format_augmented_matrix_latex(item['matrix']))
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'])}")
                 else:
                     st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
                 
