@@ -659,36 +659,39 @@ def render():
                             st.pyplot(fig)
                             
                         elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
-                            fig = plt.figure(figsize=(5, 4))  # Reduced size for better layout fit
-                            ax = fig.add_subplot(111, projection='3d')
-                            
-                            x_lin = np.linspace(-5, 5, 20)
-                            y_lin = np.linspace(-5, 5, 20)
-                            X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
-                            
-                            colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
-                            for i in range(len(b_plot)):
-                                a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
-                                c = b_plot[i]
-                                if not np.isclose(a3, 0):
-                                    Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
-                                    Z_grid = np.clip(Z_grid, -20, 20)
-                                    ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=f"Eq {i+1}")
-                                else:
-                                    st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
-                            
-                            try:
-                                sol_pt = np.linalg.solve(A_plot, b_plot)
-                                ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=100, label='Solution')
-                            except Exception:
-                                pass
+                            # Use columns to constrain width and center the plot nicely
+                            c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
+                            with c_plot_m:
+                                fig = plt.figure(figsize=(3.5, 3))  # Compact size to fit viewport perfectly
+                                ax = fig.add_subplot(111, projection='3d')
                                 
-                            ax.set_xlabel("X-axis", fontsize=8)
-                            ax.set_ylabel("Y-axis", fontsize=8)
-                            ax.set_zlabel("Z-axis", fontsize=8)
-                            ax.tick_params(axis='both', which='major', labelsize=7)
-                            ax.set_title("Geometrical Interpretation (3D Planes)", fontsize=9)
-                            st.pyplot(fig)
+                                x_lin = np.linspace(-5, 5, 15)
+                                y_lin = np.linspace(-5, 5, 15)
+                                X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
+                                
+                                colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
+                                for i in range(len(b_plot)):
+                                    a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                                    c = b_plot[i]
+                                    if not np.isclose(a3, 0):
+                                        Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
+                                        Z_grid = np.clip(Z_grid, -20, 20)
+                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=f"Eq {i+1}")
+                                    else:
+                                        st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
+                                
+                                try:
+                                    sol_pt = np.linalg.solve(A_plot, b_plot)
+                                    ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=80, label='Solution')
+                                except Exception:
+                                    pass
+                                    
+                                ax.set_xlabel("X", fontsize=7)
+                                ax.set_ylabel("Y", fontsize=7)
+                                ax.set_zlabel("Z", fontsize=7)
+                                ax.tick_params(axis='both', which='major', labelsize=6)
+                                ax.set_title("3D Planes Intersection", fontsize=8)
+                                st.pyplot(fig)
                         else:
                             st.warning("Visualization is optimized for 2 or 3 variable systems.")
                     except Exception as err:
