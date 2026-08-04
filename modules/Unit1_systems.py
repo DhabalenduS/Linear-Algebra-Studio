@@ -145,9 +145,9 @@ def render():
 
         col_set1, col_set2 = st.columns([1, 1])
         with col_set1:
-            rows = st.number_input("Rows", min_value=2, max_value=6, value=3, step=1, key="u1_rows")
+            rows = st.number_input("Rows", min_value=1, max_value=20, value=1, step=1, key="u1_rows")
         with col_set2:
-            cols = st.number_input("Columns", min_value=2, max_value=6, value=3, step=1, key="u1_cols")
+            cols = st.number_input("Columns", min_value=1, max_value=20, value=1, step=1, key="u1_cols")
             
         if st.button("Reset Workspace", key="u1_reset"):
             st.session_state.matrix_history = []
@@ -310,7 +310,7 @@ def render():
             ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
-        n_vars = st.number_input("Number of Variables / Equations ($n$)", min_value=2, max_value=5, value=3, step=1, key="sys_n")
+        n_vars = st.number_input("Number of Variables / Equations ($n$)", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
         st.markdown("##### Enter Coefficient Matrix A and Vector b")
         A_rows = []
