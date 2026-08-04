@@ -549,30 +549,31 @@ def render():
                 
         elif "LU" in method_choice:
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
+            
+            # Display coefficient matrix A and constant vector B right away
+            A_curr = np.array(A_rows, dtype=float)
+            b_curr = np.array(b_vec, dtype=float)
+            
+            st.markdown("##### 1. Initial System Setup")
+            col_a_init, col_b_init = st.columns(2)
+            with col_a_init:
+                st.markdown("Coefficient Matrix $A$:")
+                st.latex(format_matrix_latex(A_curr))
+            with col_b_init:
+                st.markdown("Constant Vector $B$:")
+                st.latex(format_matrix_latex(b_curr.reshape(-1, 1)))
+            
+            st.markdown("##### 2. Decomposition Strategy")
+            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $Ly = B$ for $y$, then $UX = y$ for $X$.")
+            st.markdown("---")
+            
             sub_option = st.selectbox(
                 "LU Breakdown View", 
                 ["(i) Show L and U Matrices (Factorization)", "(ii) Show Intermediate Steps (Solving Ly = B)", "(iii) Final Solution Vector (X)"]
             )
             
             if st.button("Compute LU Decomposition", type="primary", key="run_lu"):
-                A = np.array(A_rows, dtype=float)
-                b = np.array(b_vec, dtype=float)
-                n = len(b)
-                
-                # Display coefficient matrix A and constant vector B upfront
-                st.markdown("##### 1. Initial Matrices")
-                col_a_init, col_b_init = st.columns(2)
-                with col_a_init:
-                    st.markdown("Coefficient Matrix $A$:")
-                    st.latex(format_matrix_latex(A))
-                with col_b_init:
-                    st.markdown("Constant Vector $B$:")
-                    st.latex(format_matrix_latex(b.reshape(-1, 1)))
-                
-                st.markdown("##### 2. LU Decomposition Setup")
-                st.markdown("Let $A = LU$. Then the system $AX = B$ can be written as:")
-                st.latex("L(UX) = B")
-                
+                n = len(b_curr)
                 L = np.zeros((n, n))
                 U = np.zeros((n, n))
                 
@@ -581,31 +582,31 @@ def render():
                         L[i, i] = 1.0
                         for j in range(i, n):
                             s = sum(L[i, k] * U[k, j] for k in range(i))
-                            U[i, j] = A[i, j] - s
+                            U[i, j] = A_curr[i, j] - s
                         for j in range(i + 1, n):
                             s = sum(L[j, k] * U[k, i] for k in range(i))
-                            L[j, i] = (A[j, i] - s) / U[i, i]
+                            L[j, i] = (A_curr[j, i] - s) / U[i, i]
                 else:
                     for i in range(n):
                         U[i, i] = 1.0
                         for j in range(i, n):
                             s = sum(L[j, k] * U[k, i] for k in range(i))
-                            L[j, i] = A[j, i] - s
+                            L[j, i] = A_curr[j, i] - s
                         for j in range(i + 1, n):
                             s = sum(L[i, k] * U[k, j] for k in range(i))
-                            U[i, j] = (A[i, j] - s) / L[i, i]
+                            U[i, j] = (A_curr[i, j] - s) / L[i, i]
                 
                 y = np.zeros(n)
                 for i in range(n):
                     s = sum(L[i, k] * y[k] for k in range(i))
-                    y[i] = (b[i] - s) / L[i, i]
+                    y[i] = (b_curr[i] - s) / L[i, i]
                     
                 x = np.zeros(n)
                 for i in range(n - 1, -1, -1):
                     s = sum(U[i, k] * x[k] for k in range(i + 1, n))
                     x[i] = (y[i] - s) / U[i, i]
 
-                st.markdown("##### 3. Factorized Matrices")
+                st.markdown("##### 3. Factorized Result Matrices")
                 col_l1, col_l2 = st.columns(2)
                 with col_l1:
                     st.markdown("**Lower Triangular Matrix L:**")
