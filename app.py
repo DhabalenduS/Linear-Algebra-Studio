@@ -1,5 +1,6 @@
 import streamlit as st
 import importlib
+import traceback
 
 # --- Page Configuration (Must be the first Streamlit command) ---
 st.set_page_config(
@@ -8,8 +9,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dynamically import Unit1_systems module to prevent path/syntax issues
-Unit1_systems = importlib.import_module("modules.Unit1_systems")
+# --- Safe Module Import Helper ---
+def load_module(module_name):
+    try:
+        return importlib.import_module(module_name)
+    except Exception as e:
+        st.error(f"⚠️ Error loading module `{module_name}`:")
+        st.code(traceback.format_exc(), language="python")
+        return None
+
+# Dynamically import Unit1_systems module safely
+Unit1_systems = load_module("modules.Unit1_systems")
 
 # --- Custom Styling ---
 st.markdown("""
@@ -120,7 +130,10 @@ if st.session_state.active_unit == "Home":
 
 # --- RENDER ACTIVE MODULE CONTENT ---
 elif st.session_state.active_unit == "Unit-I":
-    Unit1_systems.render()
+    if Unit1_systems and hasattr(Unit1_systems, "render"):
+        Unit1_systems.render()
+    else:
+        st.error("The `Unit1_systems` module could not be loaded or lacks a `render()` function. Please inspect `modules/Unit1_systems.py`.")
 
 elif st.session_state.active_unit == "Unit-II":
     st.header("Unit-II: Vector Spaces")
