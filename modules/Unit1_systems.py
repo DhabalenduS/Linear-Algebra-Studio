@@ -4,6 +4,13 @@ import re
 from fractions import Fraction
 import matplotlib.pyplot as plt
 
+# Optional PDF generator support
+try:
+    from fpdf import FPDF
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+
 def format_matrix_latex(mat):
     latex_rows = []
     for row in mat:
@@ -53,6 +60,19 @@ def perform_row_operation(A, op_str):
     except Exception as e:
         raise ValueError(f"Error evaluating expression: {e}.")
     return new_A
+
+def matrix_to_pretty_string(mat):
+    rows_str = []
+    for row in mat:
+        row_vals = []
+        for val in row:
+            try:
+                f = Fraction(val).limit_denominator()
+                row_vals.append(str(f) if f.denominator == 1 else f"{f.numerator}/{f.denominator}")
+            except:
+                row_vals.append(str(val))
+        rows_str.append("[ " + "  ".join(row_vals) + " ]")
+    return "\n".join(rows_str)
 
 def render():
     st.markdown("""
@@ -194,31 +214,47 @@ def render():
                         st.warning("No operations to undo.")
 
             with col_right:
-                st.markdown("##### 📜 Quick History Summary")
                 if st.session_state.matrix_history:
-                    st.info(f"Total steps performed: {len(st.session_state.matrix_history)}")
-                else:
-                    st.write("No operations executed yet.")
-
-            if st.session_state.matrix_history:
-                st.markdown("---")
-                col_hist_title, col_hist_btn = st.columns([3, 1])
-                with col_hist_title:
-                    st.markdown("##### 📚 Step-by-Step Practice History")
-                with col_hist_btn:
-                    history_text = f"Initial Matrix:\n{str(st.session_state.original_matrix)}\n\n"
+                    st.markdown("##### 📥 Export History")
+                    
+                    # Build clean text log matching screen display format
+                    history_text = f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}\n\n"
                     for idx, item in enumerate(st.session_state.matrix_history):
-                        history_text += f"Step {idx+1}: {item['operation']}\n{str(item['matrix'])}\n\n"
-                    history_text += f"Final Current Matrix:\n{str(st.session_state.current_matrix)}"
+                        history_text += f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}\n\n"
+                    history_text += f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}"
                     
                     st.download_button(
-                        label="📥 Download History",
+                        label="📄 Download as Text (.txt)",
                         data=history_text,
                         file_name="matrix_practice_history.txt",
                         mime="text/plain",
-                        key="download_history_btn"
+                        key="download_history_txt"
                     )
 
+                    if PDF_AVAILABLE:
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_font("Courier", size=11)
+                        pdf.cell(200, 10, txt="Matrix Row Operations - Practice History", ln=True, align='C')
+                        pdf.ln(10)
+                        
+                        for line in history_text.split('\n'):
+                            pdf.cell(200, 6, txt=line, ln=True)
+                            
+                        pdf_bytes = bytes(pdf.output())
+                        st.download_button(
+                            label="📥 Download as PDF (.pdf)",
+                            data=pdf_bytes,
+                            file_name="matrix_practice_history.pdf",
+                            mime="application/pdf",
+                            key="download_history_pdf"
+                        )
+                    else:
+                        st.caption("Tip: Install `fpdf2` (`pip install fpdf2`) to enable direct PDF downloads.")
+
+            if st.session_state.matrix_history:
+                st.markdown("---")
+                st.markdown("##### 📚 Step-by-Step Practice History")
                 for idx, item in enumerate(st.session_state.matrix_history):
                     with st.expander(f"Step {idx+1}: {item['operation']}"):
                         st.latex(format_matrix_latex(item['matrix']))
@@ -357,7 +393,6 @@ def render():
                 except Exception as e:
                     st.error(f"Error calculating rank: {e}")
 
-        # --- OPTIONAL GEOMETRICAL VISUALIZATION SECTION ---
         if n_vars in [2, 3] and 'last_solved_system' in st.session_state:
             st.markdown("---")
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)"):
