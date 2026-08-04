@@ -365,24 +365,38 @@ def render():
                     aug = np.column_stack((A_mat, b_col))
                     
                     st.markdown("##### Automated Execution Steps")
-                    steps = [aug.copy()]
+                    
+                    # Step 0
+                    st.markdown(f"**Step 0 Augmented matrix [A|B] =**")
+                    st.latex(format_matrix_latex(aug))
+                    
                     curr = aug.copy()
+                    step_count = 1
+                    
                     for i in range(n_vars):
                         if curr[i, i] == 0:
                             for r in range(i+1, n_vars):
                                 if curr[r, i] != 0:
+                                    op_desc = f"R{i+1} <-> R{r+1}"
                                     curr[[i, r]] = curr[[r, i]]
-                                    steps.append(curr.copy())
+                                    st.markdown(f"**Step {step_count} Matrix:** `~{op_desc}`")
+                                    st.latex(format_matrix_latex(curr))
+                                    step_count += 1
                                     break
                         for j in range(i+1, n_vars):
-                            if curr[i, i] != 0:
+                            if curr[i, i] != 0 and curr[j, i] != 0:
                                 factor = curr[j, i] / curr[i, i]
+                                f_frac = Fraction(factor).limit_denominator()
+                                if f_frac.denominator == 1:
+                                    f_str = str(f_frac.numerator)
+                                else:
+                                    f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
+                                
+                                op_desc = f"R{j+1} -> R{j+1} - {f_str}*R{i+1}"
                                 curr[j] = curr[j] - factor * curr[i]
-                                steps.append(curr.copy())
-                    
-                    for idx, step_mat in enumerate(steps):
-                        st.markdown(f"**Step {idx} Matrix:**")
-                        st.latex(format_matrix_latex(step_mat))
+                                st.markdown(f"**Step {step_count} Matrix:** `~{op_desc}`")
+                                st.latex(format_matrix_latex(curr))
+                                step_count += 1
                         
                     x = np.zeros(n_vars)
                     for i in range(n_vars - 1, -1, -1):
