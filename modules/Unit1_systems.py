@@ -659,7 +659,7 @@ def render():
                             st.pyplot(fig)
                             
                         elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
-                            fig = plt.figure(figsize=(8, 6))
+                            fig = plt.figure(figsize=(5, 4))
                             ax = fig.add_subplot(111, projection='3d')
                             
                             x_lin = np.linspace(-5, 5, 20)
