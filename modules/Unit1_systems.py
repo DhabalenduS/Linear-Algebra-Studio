@@ -353,36 +353,121 @@ def render():
         b_vec = [float(x) for x in b_content.split()]
         
         if method_choice == "Gauss Elimination":
-            if st.button("Run Gauss Solver", type="primary", key="run_gauss"):
-                A_mat = np.array(A_rows, dtype=float)
-                b_col = np.array(b_vec, dtype=float)
-                aug = np.column_stack((A_mat, b_col))
-                
-                st.markdown("##### Automated Execution Steps")
-                steps = [aug.copy()]
-                curr = aug.copy()
-                for i in range(n_vars):
-                    if curr[i, i] == 0:
-                        for r in range(i+1, n_vars):
-                            if curr[r, i] != 0:
-                                curr[[i, r]] = curr[[r, i]]
-                                steps.append(curr.copy())
-                                break
-                    for j in range(i+1, n_vars):
-                        if curr[i, i] != 0:
-                            factor = curr[j, i] / curr[i, i]
-                            curr[j] = curr[j] - factor * curr[i]
-                            steps.append(curr.copy())
-                
-                for idx, step_mat in enumerate(steps):
-                    st.markdown(f"**Step {idx} Matrix:**")
-                    st.latex(format_matrix_latex(step_mat))
+            gauss_mode = st.selectbox(
+                "Select Gauss Solver Mode",
+                ["(i) Automated Gauss Solver", "(ii) Manual Gauss Solver"]
+            )
+            
+            if gauss_mode == "(i) Automated Gauss Solver":
+                if st.button("Run Automated Gauss Solver", type="primary", key="run_gauss"):
+                    A_mat = np.array(A_rows, dtype=float)
+                    b_col = np.array(b_vec, dtype=float)
+                    aug = np.column_stack((A_mat, b_col))
                     
-                x = np.zeros(n_vars)
-                for i in range(n_vars - 1, -1, -1):
-                    x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
-                st.success(f"Final Solution Vector X: {x}")
-                st.session_state['last_solved_system'] = (A_mat, b_col)
+                    st.markdown("##### Automated Execution Steps")
+                    steps = [aug.copy()]
+                    curr = aug.copy()
+                    for i in range(n_vars):
+                        if curr[i, i] == 0:
+                            for r in range(i+1, n_vars):
+                                if curr[r, i] != 0:
+                                    curr[[i, r]] = curr[[r, i]]
+                                    steps.append(curr.copy())
+                                    break
+                        for j in range(i+1, n_vars):
+                            if curr[i, i] != 0:
+                                factor = curr[j, i] / curr[i, i]
+                                curr[j] = curr[j] - factor * curr[i]
+                                steps.append(curr.copy())
+                    
+                    for idx, step_mat in enumerate(steps):
+                        st.markdown(f"**Step {idx} Matrix:**")
+                        st.latex(format_matrix_latex(step_mat))
+                        
+                    x = np.zeros(n_vars)
+                    for i in range(n_vars - 1, -1, -1):
+                        x[i] = (curr[i, -1] - np.dot(curr[i, i+1:n_vars], x[i+1:n_vars])) / curr[i, i]
+                    st.success(f"Final Solution Vector X: {x}")
+                    st.session_state['last_solved_system'] = (A_mat, b_col)
+            else:
+                st.markdown("##### Manual Gauss Elimination Workspace")
+                st.info("Apply row operations step-by-step to the augmented matrix $[A | B]$ until you reach row echelon form, then find your solution.")
+                
+                if "manual_gauss_history" not in st.session_state:
+                    st.session_state.manual_gauss_history = []
+                if "manual_gauss_orig" not in st.session_state:
+                    st.session_state.manual_gauss_orig = None
+                if "manual_gauss_curr" not in st.session_state:
+                    st.session_state.manual_gauss_curr = None
+
+                c_init1, c_init2 = st.columns(2)
+                with c_init1:
+                    if st.button("Load Augmented Matrix Into Manual Workspace", type="primary", key="load_manual_aug"):
+                        A_mat = np.array(A_rows, dtype=float)
+                        b_col = np.array(b_vec, dtype=float)
+                        aug = np.column_stack((A_mat, b_col))
+                        st.session_state.manual_gauss_orig = aug.copy()
+                        st.session_state.manual_gauss_curr = aug.copy()
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+                with c_init2:
+                    if st.button("Reset Manual Workspace", key="reset_manual_aug"):
+                        st.session_state.manual_gauss_orig = None
+                        st.session_state.manual_gauss_curr = None
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+
+                if st.session_state.manual_gauss_curr is not None:
+                    st.markdown("---")
+                    mg_col1, mg_col2 = st.columns(2)
+                    with mg_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A | B]$")
+                        st.latex(format_matrix_latex(st.session_state.manual_gauss_orig))
+                    with mg_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_matrix_latex(st.session_state.manual_gauss_curr))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    m_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="manual_op_input")
+                    
+                    mc1, mc2 = st.columns(2)
+                    with mc1:
+                        m_apply_btn = st.button("Execute Step", type="primary", key="manual_exec")
+                    with mc2:
+                        m_undo_btn = st.button("Undo Last Step", key="manual_undo")
+                        
+                    if m_apply_btn and m_op_input:
+                        try:
+                            updated = perform_row_operation(st.session_state.manual_gauss_curr, m_op_input)
+                            st.session_state.manual_gauss_history.append({"operation": m_op_input, "matrix": updated.copy()})
+                            st.session_state.manual_gauss_curr = updated
+                            st.success(f"Successfully applied: {m_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if m_undo_btn:
+                        if st.session_state.manual_gauss_history:
+                            st.session_state.manual_gauss_history.pop()
+                            if st.session_state.manual_gauss_history:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_gauss_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_gauss_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(format_matrix_latex(item['matrix']))
+                else:
+                    st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
                 
         elif "LU" in method_choice:
             lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
