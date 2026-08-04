@@ -149,9 +149,9 @@ def render():
 
         col_set1, col_set2 = st.columns([1, 1])
         with col_set1:
-            rows = st.number_input("Rows", min_value=1, max_value=20, value=1, step=1, key="u1_rows")
+            rows = st.number_input("Rows", min_value=1, max_value=20, value=3, step=1, key="u1_rows")
         with col_set2:
-            cols = st.number_input("Columns", min_value=1, max_value=20, value=1, step=1, key="u1_cols")
+            cols = st.number_input("Columns", min_value=1, max_value=20, value=4, step=1, key="u1_cols")
             
         if st.button("Reset Workspace", key="u1_reset"):
             st.session_state.matrix_history = []
@@ -311,23 +311,19 @@ def render():
         st.markdown("#### System of Linear Equations Solver")
         st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
-        # (i) Select Solution Technique box restricted via CSS (max-width: 250px / 1/4 layout)
         method_choice = st.selectbox(
             "Select Solution Technique", 
             ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
-        # (ii) Number of variables only
         n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
-        # (iii) Enter Coefficient Matrix A and Vector B description update
         st.markdown("##### Enter Coefficient Matrix A (space separated)")
         
         example_placeholder = " ".join(str(j+1) for j in range(n_vars))
         A_rows = []
         for i in range(n_vars):
-            # (iv) R1 followed by half length button/input in the same line displaying e.g. 1 2 3
-            c_lbl, c_inp = st.columns([0.08, 0.45])
+            c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
             with c_lbl:
                 st.markdown(f"**R{i+1}**")
             with c_inp:
@@ -341,7 +337,11 @@ def render():
             A_rows.append([float(x) for x in r_val.split()])
             
         st.markdown("##### Constant vector B (space separated)")
-        b_val = st.text_input("Constant vector B", value=" ".join(["1"] * n_vars), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
+        c_lbl_b, c_inp_b, c_space_b = st.columns([0.06, 0.3, 0.64])
+        with c_lbl_b:
+            st.markdown("**B**")
+        with c_inp_b:
+            b_val = st.text_input("Constant vector B", value=" ".join(["1"] * n_vars), placeholder="e.g. 1 2 3", key="gauss_b", label_visibility="collapsed")
         b_vec = [float(x) for x in b_val.split()]
         
         if method_choice == "Gauss Elimination":
@@ -482,7 +482,6 @@ def render():
                         ax.set_ylim(-10, 10)
                         ax.grid(True, linestyle='--', alpha=0.6)
                         ax.legend()
-                        ax.set_title("Geometrical Interpretation (2D Lines)")
                         st.pyplot(fig)
                         
                     elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
