@@ -86,9 +86,9 @@ def render():
             font-size: 0.9rem !important;
             border-radius: 4px;
         }
-        /* Constrain text input width for professional alignment */
+        /* Constrain text input width to half and ensure left alignment */
         div.stTextInput input {
-            max-width: 320px !important;
+            max-width: 160px !important;
         }
         div.stNumberInput {
             max-width: 180px !important;
@@ -165,8 +165,8 @@ def render():
             temp_inputs = []
             for i in range(rows):
                 default_val = " ".join(["1" if j==i else "0" for j in range(cols)])
-                # Use custom columns to place label and input side-by-side compactly
-                c_lbl, c_inp = st.columns([0.1, 0.9])
+                # Left-aligned inline layout with tight columns for label and half-width input
+                c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
                 with c_lbl:
                     st.markdown(f"**R{i+1}**")
                 with c_inp:
