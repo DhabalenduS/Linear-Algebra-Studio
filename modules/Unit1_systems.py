@@ -311,23 +311,33 @@ def render():
         st.markdown("#### System of Linear Equations Solver")
         st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
+        # (i) Select Solution Technique box restricted via CSS (max-width: 250px / 1/4 layout)
         method_choice = st.selectbox(
             "Select Solution Technique", 
             ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
+        # (ii) Number of variables only
         n_vars = st.number_input("Number of variables", min_value=1, max_value=20, value=3, step=1, key="sys_n")
         
+        # (iii) Enter Coefficient Matrix A and Vector B description update
         st.markdown("##### Enter Coefficient Matrix A and Vector B (space separated)")
         
-        example_placeholder = " ".join("1" if j == 0 else "0" for j in range(n_vars))
+        example_placeholder = " ".join(str(j+1) for j in range(n_vars))
         A_rows = []
         for i in range(n_vars):
-            c_lbl, c_inp = st.columns([0.06, 0.3])
+            # (iv) R1 followed by half length button/input in the same line displaying e.g. 1 2 3
+            c_lbl, c_inp = st.columns([0.08, 0.45])
             with c_lbl:
                 st.markdown(f"**R{i+1}**")
             with c_inp:
-                r_val = st.text_input(f"Row {i+1}", value=" ".join(["1" if j==i else "0" for j in range(n_vars)]), placeholder=f"e.g. {example_placeholder}", key=f"gauss_a_{i}", label_visibility="collapsed")
+                r_val = st.text_input(
+                    f"R{i+1}", 
+                    value=" ".join([str(j+1 if j==i else 0) for j in range(n_vars)]), 
+                    placeholder=example_placeholder, 
+                    key=f"gauss_a_{i}", 
+                    label_visibility="collapsed"
+                )
             A_rows.append([float(x) for x in r_val.split()])
             
         st.markdown("##### Constant vector B (space separated)")
