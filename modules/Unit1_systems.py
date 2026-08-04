@@ -163,7 +163,6 @@ def render():
             input_warnings = []
             has_empty_inputs = False
 
-            # Generate dynamic placeholder text based on the number of columns
             example_placeholder = " ".join(str(j) for j in range(1, cols + 1))
 
             temp_inputs = []
@@ -299,9 +298,15 @@ def render():
             if st.session_state.matrix_history:
                 st.markdown("---")
                 st.markdown("##### 📚 Step-by-Step Practice History")
+                
+                # Display initial matrix in text format matching user specification
+                st.text(f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}")
+                
                 for idx, item in enumerate(st.session_state.matrix_history):
-                    with st.expander(f"Step {idx+1}: {item['operation']}"):
-                        st.latex(format_matrix_latex(item['matrix']))
+                    step_text = f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}"
+                    st.text(step_text)
+                
+                st.text(f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}")
 
     # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
     elif selected_tab == "System of Linear Equations":
