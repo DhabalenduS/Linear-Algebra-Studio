@@ -558,6 +558,21 @@ def render():
                 A = np.array(A_rows, dtype=float)
                 b = np.array(b_vec, dtype=float)
                 n = len(b)
+                
+                # Display coefficient matrix A and constant vector B upfront
+                st.markdown("##### 1. Initial Matrices")
+                col_a_init, col_b_init = st.columns(2)
+                with col_a_init:
+                    st.markdown("Coefficient Matrix $A$:")
+                    st.latex(format_matrix_latex(A))
+                with col_b_init:
+                    st.markdown("Constant Vector $B$:")
+                    st.latex(format_matrix_latex(b.reshape(-1, 1)))
+                
+                st.markdown("##### 2. LU Decomposition Setup")
+                st.markdown("Let $A = LU$. Then the system $AX = B$ can be written as:")
+                st.latex("L(UX) = B")
+                
                 L = np.zeros((n, n))
                 U = np.zeros((n, n))
                 
@@ -590,19 +605,21 @@ def render():
                     s = sum(U[i, k] * x[k] for k in range(i + 1, n))
                     x[i] = (y[i] - s) / U[i, i]
 
-                if "(i)" in sub_option:
-                    col_l1, col_l2 = st.columns(2)
-                    with col_l1:
-                        st.markdown("**Lower Triangular Matrix L**")
-                        st.latex(format_matrix_latex(L))
-                    with col_l2:
-                        st.markdown("**Upper Triangular Matrix U**")
-                        st.latex(format_matrix_latex(U))
-                elif "(ii)" in sub_option:
-                    st.markdown("**Intermediate Solution Vector (y solving Ly = B)**")
+                st.markdown("##### 3. Factorized Matrices")
+                col_l1, col_l2 = st.columns(2)
+                with col_l1:
+                    st.markdown("**Lower Triangular Matrix L:**")
+                    st.latex(format_matrix_latex(L))
+                with col_l2:
+                    st.markdown("**Upper Triangular Matrix U:**")
+                    st.latex(format_matrix_latex(U))
+
+                st.markdown("---")
+                if "(ii)" in sub_option:
+                    st.markdown("**Intermediate Solution Vector ($y$ solving $Ly = B$):**")
                     st.write(y)
-                else:
-                    st.markdown("**Final Solution Vector (X solving UX = y)**")
+                elif "(iii)" in sub_option:
+                    st.markdown("**Final Solution Vector ($X$ solving $UX = y$):**")
                     st.write(x)
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
