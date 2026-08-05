@@ -747,13 +747,13 @@ def render():
                     st.markdown(f"* Rank of Augmented Matrix [A|B]: **{r_aug}**")
                     
                     if r_a != r_aug:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ ($\\{r_a} \\neq \\{r_aug}$). Therefore, the system is **Inconsistent** (No solution).")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ ($\\{r_a} \\neq \\{r_aug}$). Therefore, the system is **Inconsistent**.")
                         st.error("The system is **Inconsistent** (No solutions).")
                     elif r_a == r_aug and r_a == n_vars:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}}$. Therefore, the system is **Consistent with a Unique Solution**.")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}}$.")
                         st.success("The system is **Consistent** with a **Unique Solution**.")
                     else:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} (\\{n_vars})$. Therefore, the system is **Consistent with Infinitely Many Solutions**.")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} (\\{n_vars})$.")
                         st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
                 except Exception as e:
                     st.error(f"Error calculating rank: {e}")
