@@ -837,6 +837,7 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
+        # Professional 1/4 layout for Enter Matrix A section
         c_ta1, c_ta2 = st.columns([1, 3])
         with c_ta1:
             st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
