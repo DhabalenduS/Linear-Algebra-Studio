@@ -213,7 +213,7 @@ def render():
             
             init_col1, init_col2 = st.columns([1, 3])
             with init_col1:
-                init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init", use_container_width=True)
+                init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
             
             if init_btn:
                 if has_empty_inputs:
@@ -361,9 +361,7 @@ def render():
             )
             
             if gauss_mode == "(i) Automated Gauss Solver":
-                run_col1, run_col2 = st.columns([1, 3])
-                with run_col1:
-                    run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss", use_container_width=True)
+                run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss")
 
                 if run_gauss_clicked:
                     A_mat = np.array(A_rows, dtype=float)
@@ -560,9 +558,7 @@ def render():
                 ]
             )
             
-            lu_col1, lu_col2 = st.columns([1, 3])
-            with lu_col1:
-                run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu", use_container_width=True)
+            run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu")
 
             if run_lu_clicked:
                 n = len(b_curr)
@@ -725,9 +721,7 @@ def render():
                     st.markdown("##### Final Complete Solution Vector X:")
                     st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
         else:
-            rk_col1, rk_col2 = st.columns([1, 3])
-            with rk_col1:
-                calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys", use_container_width=True)
+            calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys")
 
             if calc_rank_clicked:
                 try:
@@ -758,9 +752,7 @@ def render():
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 
-                gp_col1, gp_col2 = st.columns([1, 3])
-                with gp_col1:
-                    gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary", use_container_width=True)
+                gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary")
 
                 if gen_plot_clicked:
                     try:
@@ -837,7 +829,6 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # Professional 1/4 and 3/4 layout using container/columns for custom sizing
         c_ta1, c_ta2 = st.columns([1, 3])
         with c_ta1:
             st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
@@ -859,7 +850,6 @@ def render():
             st.error(f"Invalid matrix format: {e}")
             A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
-        # Select Method (aligned properly using a custom container width layout)
         c_m_lbl, c_m_inp = st.columns([1, 3])
         with c_m_lbl:
             st.markdown("**Select Method:**")
@@ -871,7 +861,6 @@ def render():
                 label_visibility="collapsed"
             )
 
-        # Select Mode (aligned properly using custom container width layout)
         c_mod_lbl, c_mod_inp = st.columns([1, 3])
         with c_mod_lbl:
             st.markdown("**Select Mode:**")
@@ -886,9 +875,7 @@ def render():
 
         st.markdown("---")
 
-        btn_col1, btn_col2 = st.columns([1, 3])
-        with btn_col1:
-            compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn", use_container_width=True)
+        compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn")
 
         if compute_clicked:
             if mode_choice == "Automated":
@@ -971,9 +958,7 @@ def render():
                 
                 user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
                 
-                v_col1, v_col2 = st.columns([1, 3])
-                with v_col1:
-                    verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary", use_container_width=True)
+                verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary")
 
                 if verify_clicked:
                     try:
