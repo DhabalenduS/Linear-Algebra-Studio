@@ -568,7 +568,7 @@ def render():
                 "LU Breakdown View", 
                 [
                     "(ii) Show Intermediate Steps (Solving Ly = B) & Formulas", 
-                    "(iii) Final Solution Vector (X)",
+                    "(iii) Complete Solution (X)",
                     "(i) Show L and U Matrices (Factorization Only)"
                 ]
             )
@@ -633,21 +633,41 @@ def render():
                     
                     st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
                     
-                    st.markdown("**Calculated Intermediate Values:**")
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
                     for i in range(n):
-                        eq_desc = f"y_{{ {i+1} }} = {y[i]:.4g}"
-                        st.latex(eq_desc)
+                        sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
+                        f_rhs = Fraction(b_curr[i] - sub_sum_y).limit_denominator()
+                        f_diag = Fraction(L[i, i]).limit_denominator()
                         
-                    st.markdown("##### Step 3: Back Substitution Details ($UX = Y$)")
-                    st.latex(r"U \cdot X = Y")
-                    for i in range(n - 1, -1, -1):
-                        st.latex(f"x_{{ {i+1} }} = {x[i]:.4g}")
+                        terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
+                        expl_str = f"y_{{ {i+1} }} = \\frac{{ {b_curr[i]} " + ("- " + " - ".join(terms_exp) if terms_exp else "") + f"}} {{{L[i, i]}}} = {y[i]:.4g}"
+                        st.latex(expl_str)
                         
                 elif "(iii)" in sub_option:
-                    st.markdown("##### Final Solution Vector ($X$)")
-                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)) + r"^T")
+                    st.markdown("##### Complete Solution: Step 2 & Step 3 Combined")
+                    st.markdown("**1. Intermediate Vector Y ($LY = B$):**")
+                    for i in range(n):
+                        st.latex(f"y_{{ {i+1} }} = {y[i]:.4g}")
+                        
+                    st.markdown("**2. Back Substitution ($UX = Y$):**")
+                    st.latex(r"U \cdot X = Y")
+                    ux_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else round(U[i, j], 2)) for j in range(n)])
+                        ux_rows.append(f"{row_str} \\\\")
+                    ux_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ux_rows) + f"\n\\end{{bmatrix}}"
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"{val:.4g}" for val in y]) + " \\end{bmatrix}"
+                    st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Back Substitution Calculation:**")
+                    for i in range(n - 1, -1, -1):
+                        st.latex(f"x_{{ {i+1} }} = \\frac{{ {y[i]:.4g} - \\sum_{{k={i+2}}}^{{{n}}} U_{{{i+1}k}} x_k }} {{{U[i, i]}}} = {x[i]:.4g}")
+                        
+                    st.markdown("##### Final Complete Solution Vector X:")
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
                 else:
-                    st.markdown("_(Switch to option (ii) above to show full substitution formulas and intermediate calculation notes)_")
+                    st.markdown("_(Switch to option (ii) or (iii) above to view complete step-by-step calculation notes)_")
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
                 try:
