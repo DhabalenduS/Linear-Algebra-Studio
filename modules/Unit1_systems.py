@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 
-def adjoint_method_module():
+def render():
     st.subheader("Inverse via Adjoint Method")
     
     # Select Mode
@@ -102,4 +102,4 @@ def adjoint_method_module():
 
 if __name__ == "__main__":
     st.title("Linear Algebra Studio")
-    adjoint_method_module()
+    render()
