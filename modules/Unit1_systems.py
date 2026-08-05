@@ -837,7 +837,7 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # Professional 1/4 layout for Enter Matrix A section
+        # Professional 1/4 and 3/4 layout using container/columns for custom sizing
         c_ta1, c_ta2 = st.columns([1, 3])
         with c_ta1:
             st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
@@ -859,22 +859,29 @@ def render():
             st.error(f"Invalid matrix format: {e}")
             A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
-        # Uniform 1/4 layout for Select Method & Select Mode dropdowns using columns [1, 3]
-        col_m1, col_m2 = st.columns([1, 3])
-        with col_m1:
+        # Select Method (aligned properly using a custom container width layout)
+        c_m_lbl, c_m_inp = st.columns([1, 3])
+        with c_m_lbl:
+            st.markdown("**Select Method:**")
+        with c_m_inp:
             method_choice = st.selectbox(
                 "Select Method:",
                 options=["Adjoint Formula", "Gauss-Jordan Elimination"],
-                key="inverse_method_dropdown"
+                key="inverse_method_dropdown",
+                label_visibility="collapsed"
             )
 
-        col_mod1, col_mod2 = st.columns([1, 3])
-        with col_mod1:
+        # Select Mode (aligned properly using custom container width layout)
+        c_mod_lbl, c_mod_inp = st.columns([1, 3])
+        with c_mod_lbl:
+            st.markdown("**Select Mode:**")
+        with c_mod_inp:
             mode_choice = st.selectbox(
                 "Select Mode:",
                 options=["Automated", "Manual"],
                 help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
-                key="inverse_mode_dropdown"
+                key="inverse_mode_dropdown",
+                label_visibility="collapsed"
             )
 
         st.markdown("---")
