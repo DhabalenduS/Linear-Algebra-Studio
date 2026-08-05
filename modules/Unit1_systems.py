@@ -818,15 +818,15 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # (i) Enter Input Matrix A
+        # (i) Updated label to space-separated rows
         matrix_input_str = st.text_area(
-            "Enter Matrix A (Row-by-row, comma or space separated rows):",
-            value="1, 0, 2\n0, 1, 0\n1, 0, 3",
+            "Enter Matrix A (Row-by-row, space separated rows):",
+            value="1 0 2\n0 1 0\n1 0 3",
             help="Example:\n1 0 2\n0 1 0\n1 0 3",
             key="inverse_matrix_input"
         )
 
-        # Parse matrix input safely
+        # Parse matrix input supporting spaces/commas safely
         try:
             rows_input = matrix_input_str.strip().split("\n")
             matrix_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_input if r.strip()]
@@ -852,10 +852,10 @@ def render():
 
         st.markdown("---")
 
-        # Force button to be precisely 1/4 (25%) width using a 4-column layout container
-        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 1])
+        # (ii) Professional 1/4 width layout for button using columns [1, 3]
+        btn_col1, btn_col2 = st.columns([1, 3])
         with btn_col1:
-            compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn")
+            compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn", use_container_width=True)
 
         if compute_clicked:
             if mode_choice == "Automated":
@@ -877,8 +877,9 @@ def render():
                                 st.markdown("**2. Adjoint Matrix:**")
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
+                                # (iii) Fixed A^{-1} proper LaTeX escaping
                                 st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
-                                st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                             else:
                                 cofactors = np.zeros((n, n))
                                 for i in range(n):
@@ -890,7 +891,8 @@ def render():
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
                                 st.markdown("**3. Inverse Matrix:**")
-                                st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
+                                # (iii) Fixed A^{-1} proper LaTeX escaping
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                                 
                         else:  # Gauss-Jordan Elimination
                             st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
@@ -931,12 +933,13 @@ def render():
                             inv_mat = curr_aug[:, n:]
                             st.success("Successfully reduced to Reduced Row Echelon Form!")
                             st.markdown("**Final Inverse Matrix $A^{-1}$:**")
-                            st.latex(f"A^{-1} = {format_matrix_latex(inv_mat)}")
+                            # (iii) Fixed A^{-1} proper LaTeX escaping
+                            st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat)}")
             else:
                 st.subheader(f"Manual Practice Mode ({method_choice})")
                 st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
                 
-                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1, 0, 0\n0, 1, 0\n0, 0, 1", key="user_manual_inverse_input")
+                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
                 
                 if st.button("Verify My Inverse Matrix", key="verify_manual_inverse"):
                     try:
@@ -952,6 +955,7 @@ def render():
                         else:
                             st.error("❌ Your matrix does not match the correct inverse. Please review your steps and try again.")
                             st.markdown("**Expected Correct Inverse for comparison:**")
-                            st.latex(f"A^{-1} = {format_matrix_latex(actual_inv)}")
+                            # (iii) Fixed A^{-1} proper LaTeX escaping
+                            st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
                     except Exception as err:
                         st.error(f"Error parsing your matrix input: {err}")
