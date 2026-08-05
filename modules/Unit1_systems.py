@@ -629,7 +629,7 @@ def render():
                                 st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
 
                     st.markdown("---")
-                    st.markdown("##### 3. Factorized Result Matrices")
+                    st.markdown("##### Resulting Matrices L and U")
                     col_l1, col_l2 = st.columns(2)
                     with col_l1:
                         st.markdown("Lower Triangular Matrix:")
@@ -682,6 +682,15 @@ def render():
                             for i in range(j + 1, n):
                                 known_u = sum(L[j, k] * U[k, i] for k in range(j))
                                 st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("##### Resulting Matrices L and U")
+                    col_l1, col_l2 = st.columns(2)
+                    with col_l1:
+                        st.markdown("Lower Triangular Matrix:")
+                        st.latex(f"L = {format_matrix_latex(L)}")
+                    with col_l2:
+                        st.markdown("Upper Triangular Matrix:")
+                        st.latex(f"U = {format_matrix_latex(U)}")
 
                     st.markdown("---")
                     st.markdown("#### 2. Intermediate Vector Y ($LY = B$) Calculation:")
