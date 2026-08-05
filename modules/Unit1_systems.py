@@ -615,18 +615,18 @@ def render():
                         for i in range(n):
                             for j in range(i, n):
                                 known_u = sum(L[i, k] * U[k, j] for k in range(i))
-                                st.latex(f"U_{{{i+1}{j+1}}} = A_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} L_{{{i+1}k}} U_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
                             for j in range(i + 1, n):
                                 known_l = sum(L[j, k] * U[k, i] for k in range(i))
-                                st.latex(f"L_{{{j+1}{i+1}}} = \\frac{{1}}{{U_{{{i+1}{i+1}}}}} \\left( A_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} L_{{{j+1}k}} U_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
                     else:
                         for j in range(n):
                             for i in range(j, n):
                                 known_l = sum(L[i, k] * U[k, j] for k in range(j))
-                                st.latex(f"L_{{{i+1}{j+1}}} = A_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} L_{{{i+1}k}} U_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
                             for i in range(j + 1, n):
                                 known_u = sum(L[j, k] * U[k, i] for k in range(j))
-                                st.latex(f"U_{{{j+1}{i+1}}} = \\frac{{1}}{{L_{{{j+1}{j+1}}}}} \\left( A_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} L_{{{j+1}k}} U_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
 
                     st.markdown("---")
                     st.markdown("##### 3. Factorized Result Matrices")
