@@ -211,7 +211,6 @@ def render():
 
             st.markdown("")
             
-            # --- Modified here: 1/4 width layout for initialization button ---
             init_col1, init_col2 = st.columns([1, 3])
             with init_col1:
                 init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init", use_container_width=True)
@@ -362,7 +361,6 @@ def render():
             )
             
             if gauss_mode == "(i) Automated Gauss Solver":
-                # --- Modified here: 1/4 width layout for automated gauss solver button ---
                 run_col1, run_col2 = st.columns([1, 3])
                 with run_col1:
                     run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss", use_container_width=True)
@@ -562,7 +560,6 @@ def render():
                 ]
             )
             
-            # --- Modified here: 1/4 width layout for LU computation button ---
             lu_col1, lu_col2 = st.columns([1, 3])
             with lu_col1:
                 run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu", use_container_width=True)
@@ -728,7 +725,6 @@ def render():
                     st.markdown("##### Final Complete Solution Vector X:")
                     st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
         else:
-            # --- Modified here: 1/4 width layout for rank/consistency check button ---
             rk_col1, rk_col2 = st.columns([1, 3])
             with rk_col1:
                 calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys", use_container_width=True)
@@ -762,7 +758,6 @@ def render():
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 
-                # --- Modified here: 1/4 width layout for geometry plot button ---
                 gp_col1, gp_col2 = st.columns([1, 3])
                 with gp_col1:
                     gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary", use_container_width=True)
@@ -842,13 +837,19 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # Updated label to space-separated rows
-        matrix_input_str = st.text_area(
-            "Enter Matrix A (Row-by-row, space separated rows):",
-            value="1 0 2\n0 1 0\n1 0 3",
-            help="Example:\n1 0 2\n0 1 0\n1 0 3",
-            key="inverse_matrix_input"
-        )
+        # Reduced size of text area container for matrix input by limiting height or using narrower column layout if desired
+        c_ta1, c_ta2 = st.columns([1, 3])
+        with c_ta1:
+            st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
+        with c_ta2:
+            matrix_input_str = st.text_area(
+                "Enter Matrix A (Row-by-row, space separated rows):",
+                value="1 0 2\n0 1 0\n1 0 3",
+                help="Example:\n1 0 2\n0 1 0\n1 0 3",
+                key="inverse_matrix_input",
+                label_visibility="collapsed",
+                height=90
+            )
 
         # Parse matrix input supporting spaces/commas safely
         try:
@@ -962,7 +963,6 @@ def render():
                 
                 user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
                 
-                # --- Modified here: 1/4 width layout for verify inverse button ---
                 v_col1, v_col2 = st.columns([1, 3])
                 with v_col1:
                     verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary", use_container_width=True)
