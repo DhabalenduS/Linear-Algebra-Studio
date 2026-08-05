@@ -837,7 +837,6 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # Reduced size of text area container for matrix input by limiting height or using narrower column layout if desired
         c_ta1, c_ta2 = st.columns([1, 3])
         with c_ta1:
             st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
@@ -851,7 +850,6 @@ def render():
                 height=90
             )
 
-        # Parse matrix input supporting spaces/commas safely
         try:
             rows_input = matrix_input_str.strip().split("\n")
             matrix_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_input if r.strip()]
@@ -860,24 +858,26 @@ def render():
             st.error(f"Invalid matrix format: {e}")
             A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
-        # First Dropdown Menu: Method Selection
-        method_choice = st.selectbox(
-            "Select Method:",
-            options=["Adjoint Formula", "Gauss-Jordan Elimination"],
-            key="inverse_method_dropdown"
-        )
+        # Uniform 1/4 layout for Select Method & Select Mode dropdowns using columns [1, 3]
+        col_m1, col_m2 = st.columns([1, 3])
+        with col_m1:
+            method_choice = st.selectbox(
+                "Select Method:",
+                options=["Adjoint Formula", "Gauss-Jordan Elimination"],
+                key="inverse_method_dropdown"
+            )
 
-        # Second Dropdown Menu: Mode Selection (Manual vs Automated)
-        mode_choice = st.selectbox(
-            "Select Mode:",
-            options=["Automated", "Manual"],
-            help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
-            key="inverse_mode_dropdown"
-        )
+        col_mod1, col_mod2 = st.columns([1, 3])
+        with col_mod1:
+            mode_choice = st.selectbox(
+                "Select Mode:",
+                options=["Automated", "Manual"],
+                help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
+                key="inverse_mode_dropdown"
+            )
 
         st.markdown("---")
 
-        # Professional 1/4 width layout for button using columns [1, 3]
         btn_col1, btn_col2 = st.columns([1, 3])
         with btn_col1:
             compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn", use_container_width=True)
