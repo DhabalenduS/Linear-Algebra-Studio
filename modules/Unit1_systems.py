@@ -753,7 +753,7 @@ def render():
                         st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} ({n_vars})$.")
                         st.success("The system is **Consistent** with a **Unique Solution**.")
                     else:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} ({n_vars})$.")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} (= {n_vars})$.")
                         st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
                 except Exception as e:
                     st.error(f"Error calculating rank: {e}")
