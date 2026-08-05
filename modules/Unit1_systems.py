@@ -1,109 +1,2073 @@
 import streamlit as st
 import numpy as np
+import re
+from fractions import Fraction
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d impor[cite: 2]import streamlit as st
+import numpy as np
+import re
+from fractions import Fraction
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
+# Optional PDF generator support
+try:
+    from fpdf import FPDF
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+
+def format_matrix_latex(mat):
+    latex_rows = []
+    for row in mat:
+        row_elems = []
+        for val in row:
+            try:
+                f = Fraction(val).limit_denominator()
+                if f.denominator == 1:
+                    row_elems.append(str(f.numerator))
+                else:
+                    row_elems.append(f"\\frac{{{f.numerator}}}{{{f.denominator}}}")
+            except:
+                row_elems.append(str(val))
+        latex_rows.append(" & ".join(row_elems))
+    return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
+
+def format_augmented_matrix_latex(mat, n_div=None):
+    latex_rows = []
+    ncols = mat.shape[1]
+    div_idx = ncols - n_div - 1 if n_div is not None else ncols - 2
+    
+    for row in mat:
+        row_elems = []
+        for idx, val in enumerate(row):
+            try:
+                f = Fraction(val).limit_denominator()
+                if f.denominator == 1:
+                    val_str = str(f.numerator)
+                else:
+                    val_str = f"\\frac{{{f.numerator}}}{{{f.denominator}}}"
+            except:
+                val_str = str(val)
+            
+            if idx == div_idx:
+                row_elems.append(f"{val_str} \\mid")
+            else:
+                row_elems.append(val_str)
+        latex_rows.append(" & ".join(row_elems))
+    
+    return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
+
+def perform_row_operation(A, op_str):
+    op_str = op_str.replace(" ", "")
+    swap_match = re.match(r"R(\d+)<->R(\d+)", op_str)
+    if swap_match:
+        r1 = int(swap_match.group(1)) - 1
+        r2 = int(swap_match.group(2)) - 1
+        if not (0 <= r1 < len(A) and 0 <= r2 < len(A)):
+            raise ValueError(f"Row index out of range. Matrix has {len(A)} rows.")
+        new_A = A.copy()
+        new_A[[r1, r2]] = new_A[[r2, r1]]
+        return new_A
+
+    match = re.match(r"R(\d+)->(.*)", op_str)
+    if not match:
+        raise ValueError("Invalid format. Use 'R1 <-> R2' for swaps or 'R2 -> R2 - 3*R1' for replacement.")
+
+    target_idx = int(match.group(1)) - 1
+    expr = match.group(2)
+
+    if not (0 <= target_idx < len(A)):
+        raise ValueError(f"Target row index out of range. Matrix has {len(A)} rows.")
+
+    new_A = A.copy()
+    def replace_row(m):
+        r_num = int(m.group(1)) - 1
+        return f"A[{r_num}]"
+
+    python_expr = re.sub(r"R(\d+)", replace_row, expr)
+    try:
+        new_A[target_idx] = eval(python_expr, {"A": A, "np": np, "Fraction": Fraction})
+    except Exception as e:
+        raise ValueError(f"Error evaluating expression: {e}.")
+    return new_A
+
+def matrix_to_pretty_string(mat):
+    rows_str = []
+    for row in mat:
+        row_vals = []
+        for val in row:
+            try:
+                f = Fraction(val).limit_denominator()
+                row_vals.append(str(f) if f.denominator == 1 else f"{f.numerator}/{f.denominator}")
+            except:
+                row_vals.append(str(val))
+        rows_str.append("[ " + "  ".join(row_vals) + " ]")
+    return "\n".join(rows_str)
 
 def render():
-    st.subheader("Inverse via Adjoint Method")
+    st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
     
-    # Select Method
-    select_method = st.selectbox("Select Method", ["Gauss-Jordan Elimination", "Adjoint Formula"])
+    tab_names = [
+        "Row Operations", 
+        "System of Linear Equations", 
+        "Inverse of a Matrix"
+    ]
     
-    if select_method == "Adjoint Formula":
-        # Select Mode
-        mode = st.selectbox("Select Mode", ["Automated", "Manual"])
+    try:
+        query_tab = int(st.query_params.get("tab", 0))
+    except ValueError:
+        query_tab = 0
         
-        # Sample matrix B from Lecture No 6 - Problem 2
-        B = np.array([[2, -1, 1], 
-                      [1, 2, 3], 
-                      [3, -2, 4]], dtype=float)
-        
-        st.write("**Target Matrix B:**")
-        st.write(B)
-        
-        if mode == "Automated":
-            st.markdown("### Automated Solution via Adjoint Formula")
-            
-            # 1. Determinant
-            det_B = np.linalg.det(B)
-            det_rounded = round(det_B)
-            st.write(f"**1. Determinant of B:** $\\det(B) = {det_rounded}$")
-            
-            if det_rounded == 0:
-                st.error("Matrix is singular (determinant is zero). Inverse does not exist.")
-                return
+    if not (0 <= query_tab < len(tab_names)):
+        query_tab = 0
 
-            # 2. Cofactor Matrix C
-            cofactor_matrix = np.zeros_like(B)
-            rows, cols = B.shape
+    dynamic_key = f"u1_sub_tabs_key_{query_tab}"
+
+    selected_tab = st.radio(
+        "Select Sub-Topic", 
+        tab_names, 
+        index=query_tab, 
+        horizontal=True, 
+        label_visibility="collapsed",
+        key=dynamic_key
+    )
+    
+    current_tab_idx = tab_names.index(selected_tab)
+    if query_tab != current_tab_idx:
+        st.query_params["unit"] = "1"
+        st.query_params["tab"] = str(current_tab_idx)
+        st.rerun()
+    
+    st.divider()
+    
+    # --- TAB 0: ROW OPERATIONS ---
+    if selected_tab == "Row Operations":
+        st.markdown("#### Interactive Matrix Row Operations & RREF Practice")
+        st.markdown("Practice elementary row transformations, echelon forms, and matrix reduction.")
+
+        if "matrix_history" not in st.session_state:
+            st.session_state.matrix_history = []
+        if "current_matrix" not in st.session_state:
+            st.session_state.current_matrix = None
+        if "original_matrix" not in st.session_state:
+            st.session_state.original_matrix = None
+
+        col_set1, col_set2 = st.columns([1, 1])
+        with col_set1:
+            rows = st.number_input("Rows", min_value=1, max_value=20, value=3, step=1, key="u1_rows")
+        with col_set2:
+            cols = st.number_input("Columns", min_value=1, max_value=20, value=4, step=1, key="u1_cols")
+            
+        if st.button("Reset Workspace", key="u1_reset"):
+            st.session_state.matrix_history = []
+            st.session_state.current_matrix = None
+            st.session_state.original_matrix = None
+            st.rerun()
+
+        if st.session_state.original_matrix is None:
+            st.markdown("##### Step 1: Define Matrix Entries (by space separated entries)")
+
+            entered_rows = []
+            valid_input = True
+            input_warnings = []
+            has_empty_inputs = False
+
+            example_placeholder = "e.g. " + " ".join(str(j) for j in range(1, cols + 1))
+
+            temp_inputs = []
             for i in range(rows):
-                for j in range(cols):
-                    minor = np.delete(np.delete(B, i, axis=0), j, axis=1)
-                    cofactor_matrix[i, j] = ((-1) ** (i + j)) * round(np.linalg.det(minor))
-                    
-            st.write("**2. Cofactor Matrix (C):**")
-            st.write(cofactor_matrix)
-            
-            # 3. Adjoint Matrix (Transpose of Cofactor Matrix)
-            adj_B = cofactor_matrix.T
-            st.write("**3. Adjoint Matrix ($\\operatorname{adj}(B) = C^T$):**")
-            st.write(adj_B)
-            
-            # 4. Inverse Matrix B^(-1) = (1 / det(B)) * adj(B)
-            inv_B = adj_B / det_rounded
-            st.write("**4. Inverse Matrix ($B^{-1} = \\frac{1}{\\det(B)}\\operatorname{adj}(B)$):**")
-            st.write(inv_B)
+                c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
+                with c_lbl:
+                    st.markdown(f"**R{i+1}**")
+                with c_inp:
+                    row_input = st.text_input(
+                        f"Row {i+1} entries", 
+                        value="", 
+                        placeholder=example_placeholder, 
+                        key=f"row_{i}", 
+                        label_visibility="collapsed"
+                    )
+                temp_inputs.append(row_input)
 
-        elif mode == "Manual":
-            st.markdown("### Manual Practice Mode (Adjoint Formula)")
-            st.write("Perform the steps sequentially to compute the inverse via the adjoint method.")
+            for i, row_input in enumerate(temp_inputs):
+                stripped = row_input.strip()
+                if not stripped:
+                    has_empty_inputs = True
+                    valid_input = False
+                    continue
+                try:
+                    row_vals = [Fraction(x) for x in stripped.split()]
+                    if len(row_vals) > cols:
+                        valid_input = False
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but only {cols} columns are allowed.")
+                    elif len(row_vals) < cols:
+                        valid_input = False
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but {cols} columns are required.")
+                    entered_rows.append(row_vals)
+                except Exception:
+                    valid_input = False
+                    input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
+
+            if not has_empty_inputs and input_warnings:
+                st.markdown("")
+                for warn in input_warnings:
+                    st.warning(f"⚠️ {warn}")
+
+            st.markdown("")
             
-            # Step 1: Determinant input check
-            st.markdown("#### Step 1: Compute Determinant $\\det(B)$")
-            user_det = st.number_input("Enter $\\det(B)$:", value=0.0)
+            init_col1, init_col2 = st.columns([1, 3])
+            with init_col1:
+                init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
             
-            actual_det = round(np.linalg.det(B))
-            if st.button("Verify Determinant"):
-                if abs(user_det - actual_det) < 1e-5:
-                    st.success("Correct determinant!")
+            if init_btn:
+                if has_empty_inputs:
+                    st.error("Please fill in all row entries before initializing.")
+                elif valid_input:
+                    mat = np.array(entered_rows, dtype=object)
+                    st.session_state.original_matrix = mat.copy()
+                    st.session_state.current_matrix = mat.copy()
+                    st.session_state.matrix_history = []
+                    st.rerun()
                 else:
-                    st.error(f"Incorrect. The correct determinant is {actual_det}.")
-                    
-            # Step 2 & 3: Adjoint Matrix check
-            st.markdown("#### Step 2 & 3: Enter Adjoint Matrix $\\operatorname{adj}(B)$")
-            st.write("Provide elements for the 3x3 adjoint matrix:")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                adj_00 = st.number_input("adj[0,0]", value=0.0)
-                adj_10 = st.number_input("adj[1,0]", value=0.0)
-                adj_20 = st.number_input("adj[2,0]", value=0.0)
-            with col2:
-                adj_01 = st.number_input("adj[0,1]", value=0.0)
-                adj_11 = st.number_input("adj[1,1]", value=0.0)
-                adj_21 = st.number_input("adj[2,1]", value=0.0)
-            with col3:
-                adj_02 = st.number_input("adj[0,2]", value=0.0)
-                adj_12 = st.number_input("adj[1,2]", value=0.0)
-                adj_22 = st.number_input("adj[2,2]", value=0.0)
+                    st.error("Please resolve the column size discrepancies highlighted above.")
+        else:
+            st.markdown("---")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                st.markdown("##### 📌 Initial Given Matrix")
+                st.latex(format_matrix_latex(st.session_state.original_matrix))
+            with m_col2:
+                st.markdown("##### 🔄 Current Matrix State")
+                st.latex(format_matrix_latex(st.session_state.current_matrix))
+            st.markdown("---")
+
+            col_left, col_right = st.columns([1.2, 1])
+            with col_left:
+                st.markdown("##### 🛠️ Apply Row Operation")
+                st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                op_input = st.text_input("Enter Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="u1_op_input")
                 
-            user_adj = np.array([[adj_00, adj_01, adj_02],
-                                 [adj_10, adj_11, adj_12],
-                                 [adj_20, adj_21, adj_22]])
-            
-            cofactor_matrix = np.zeros_like(B)
-            for i in range(3):
-                for j in range(3):
-                    minor = np.delete(np.delete(B, i, axis=0), j, axis=1)
-                    cofactor_matrix[i, j] = ((-1) ** (i + j)) * round(np.linalg.det(minor))
-            actual_adj = cofactor_matrix.T
-            
-            if st.button("Verify Adjoint Matrix"):
-                if np.allclose(user_adj, actual_adj):
-                    st.success("Excellent! The adjoint matrix is correct.")
-                else:
-                    st.error("The adjoint matrix contains errors. Please recheck your cofactor transpose steps.")
-    else:
-        st.info("Gauss-Jordan Elimination method module.")
+                c1, c2 = st.columns(2)
+                with c1:
+                    apply_btn = st.button("Execute Operation", type="primary", key="u1_exec")
+                with c2:
+                    undo_btn = st.button("Undo Last Step", key="u1_undo")
+                    
+                if apply_btn and op_input:
+                    try:
+                        updated = perform_row_operation(st.session_state.current_matrix, op_input)
+                        st.session_state.matrix_history.append({"operation": op_input, "matrix": updated.copy()})
+                        st.session_state.current_matrix = updated
+                        st.success(f"Successfully applied: {op_input}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                        
+                if undo_btn:
+                    if st.session_state.matrix_history:
+                        st.session_state.matrix_history.pop()
+                        if st.session_state.matrix_history:
+                            st.session_state.current_matrix = st.session_state.matrix_history[-1]["matrix"].copy()
+                        else:
+                            st.session_state.current_matrix = st.session_state.original_matrix.copy()
+                        st.info("Reverted last operation.")
+                        st.rerun()
+                    else:
+                        st.warning("No operations to undo.")
 
-if __name__ == "__main__":
-    st.title("Linear Algebra Studio")
-    render()
+            with col_right:
+                if st.session_state.matrix_history:
+                    st.markdown("##### 📥 Export History")
+                    
+                    history_text = f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}\n\n"
+                    for idx, item in enumerate(st.session_state.matrix_history):
+                        history_text += f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}\n\n"
+                    history_text += f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}"
+                    
+                    st.download_button(
+                        label="📄 Download Text (.txt)",
+                        data=history_text,
+                        file_name="matrix_practice_history.txt",
+                        mime="text/plain",
+                        key="download_history_txt"
+                    )
+
+                    if PDF_AVAILABLE:
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_font("Courier", size=11)
+                        pdf.cell(200, 10, txt="Matrix Row Operations - Practice History", ln=True, align='C')
+                        pdf.ln(10)
+                        
+                        for line in history_text.split('\n'):
+                            pdf.cell(200, 6, txt=line, ln=True)
+                            
+                        pdf_bytes = bytes(pdf.output())
+                        st.download_button(
+                            label="📥 Download PDF (.pdf)",
+                            data=pdf_bytes,
+                            file_name="matrix_practice_history.pdf",
+                            mime="application/pdf",
+                            key="download_history_pdf"
+                        )
+
+            if st.session_state.matrix_history:
+                st.markdown("---")
+                st.markdown("##### 📚 Step-by-Step Practice History")
+                for idx, item in enumerate(st.session_state.matrix_history):
+                    with st.expander(f"Step {idx+1}: {item['operation']}"):
+                        st.latex(format_matrix_latex(item['matrix']))
+
+    # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
+    elif selected_tab == "System of Linear Equations":
+        st.markdown("#### System of Linear Equations Solver")
+        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
+        
+        method_choice = st.selectbox(
+            "Select Solution Technique", 
+            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
+        )
+        
+        n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
+        
+        st.markdown("##### Enter Coefficient Matrix A (space separated)")
+        
+        example_placeholder = "e.g. " + " ".join(str(j+1) for j in range(n_vars))
+        A_rows = []
+        for i in range(n_vars):
+            c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
+            with c_lbl:
+                st.markdown(f"**R{i+1}**")
+            with c_inp:
+                r_val = st.text_input(
+                    f"R{i+1}", 
+                    value="", 
+                    placeholder=example_placeholder, 
+                    key=f"gauss_a_{i}", 
+                    label_visibility="collapsed"
+                )
+            row_content = r_val.strip() if r_val.strip() else " ".join(str(j+1) for j in range(n_vars))
+            A_rows.append([float(x) for x in row_content.split()])
+            
+        st.markdown("##### Constant vector B (space separated)")
+        c_lbl_b, c_inp_b, c_space_b = st.columns([0.06, 0.3, 0.64])
+        with c_lbl_b:
+            st.markdown("**B**")
+        with c_inp_b:
+            b_val = st.text_input("Constant vector B", value="", placeholder="e.g. " + " ".join([str(j+1) for j in range(n_vars)]), key="gauss_b", label_visibility="collapsed")
+        b_content = b_val.strip() if b_val.strip() else " ".join([str(j+1) for j in range(n_vars)])
+        b_vec = [float(x) for x in b_content.split()]
+        
+        if method_choice == "Gauss Elimination":
+            gauss_mode = st.selectbox(
+                "Select Gauss Solver Mode",
+                ["(i) Automated Gauss Solver", "(ii) Manual Gauss Solver"]
+            )
+            
+            if gauss_mode == "(i) Automated Gauss Solver":
+                run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss")
+
+                if run_gauss_clicked:
+                    A_mat = np.array(A_rows, dtype=float)
+                    b_col = np.array(b_vec, dtype=float)
+                    aug = np.column_stack((A_mat, b_col))
+                    
+                    st.markdown("##### Automated Execution Steps")
+                    
+                    st.markdown("Step 0 Augmented matrix:")
+                    st.latex(f"[A|B] = {format_augmented_matrix_latex(aug, n_div=1)}")
+                    
+                    curr = aug.copy()
+                    step_count = 1
+                    
+                    for i in range(n_vars):
+                        if curr[i, i] == 0:
+                            for r in range(i+1, n_vars):
+                                if curr[r, i] != 0:
+                                    op_desc = f"R_{{ {i+1} }} \\leftrightarrow R_{{ {r+1} }}"
+                                    curr[[i, r]] = curr[[r, i]]
+                                    st.markdown(f"Step {step_count} Applying ${op_desc}$")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
+                                    step_count += 1
+                                    break
+                        for j in range(i+1, n_vars):
+                            if curr[i, i] != 0 and curr[j, i] != 0:
+                                factor = curr[j, i] / curr[i, i]
+                                f_frac = Fraction(factor).limit_denominator()
+                                if f_frac.denominator == 1:
+                                    f_str = str(f_frac.numerator)
+                                else:
+                                    f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
+                                
+                                op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
+                                curr[j] = curr[j] - factor * curr[i]
+                                st.markdown(f"Step {step_count} Applying ${op_desc}$")
+                                st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
+                                step_count += 1
+                    
+                    st.markdown("---")
+                    st.markdown("##### Back-Substitution Steps")
+                    
+                    rank_A = np.linalg.matrix_rank(curr[:, :-1])
+                    rank_aug = np.linalg.matrix_rank(curr)
+                    num_rows, num_cols = curr.shape
+                    num_vars_local = num_cols - 1
+                    
+                    if rank_A < rank_aug:
+                        st.error("The system is inconsistent (No solution exists).")
+                    elif rank_A < num_vars_local:
+                        st.warning("The system has infinitely many solutions. Parametric back-substitution applies:")
+                        for r_idx in range(num_rows):
+                            row_vals = curr[r_idx, :-1]
+                            rhs_val = curr[r_idx, -1]
+                            if not np.allclose(row_vals, 0):
+                                non_zero_elems = [f"{row_vals[c]}x_{{ {c+1} }}" for c in range(len(row_vals)) if row_vals[c] != 0]
+                                eq_str = " + ".join(non_zero_elems) + f" = {rhs_val}"
+                                st.latex(eq_str)
+                    else:
+                        x = np.zeros(n_vars)
+                        for i in range(n_vars - 1, -1, -1):
+                            sub_sum = 0
+                            sub_terms = []
+                            for k in range(i + 1, n_vars):
+                                val_k = curr[i, k]
+                                if not np.isclose(val_k, 0):
+                                    sub_sum += val_k * x[k]
+                                    f_sub = Fraction(val_k).limit_denominator()
+                                    f_sub_str = str(f_sub) if f_sub.denominator == 1 else f"\\frac{{{f_sub.numerator}}}{{{f_sub.denominator}}}"
+                                    sub_terms.append(f"{f_sub_str} x_{{ {k+1} }}")
+                            
+                            rhs_val = curr[i, -1]
+                            diag_val = curr[i, i]
+                            numer = rhs_val - sub_sum
+                            x[i] = numer / diag_val
+                            
+                            f_diag = Fraction(diag_val).limit_denominator()
+                            f_rhs = Fraction(rhs_val).limit_denominator()
+                            f_diag_str = str(f_diag) if f_diag.denominator == 1 else f"\\frac{{{f_diag.numerator}}}{{{f_diag.denominator}}}"
+                            f_rhs_str = str(f_rhs) if f_rhs.denominator == 1 else f"\\frac{{{f_rhs.numerator}}}{{{f_rhs.denominator}}}"
+                            
+                            step_eq = f"x_{{ {i+1} }} = \\frac{{{f_rhs_str}"
+                            if sub_terms:
+                                step_eq += " - " + " - ".join(sub_terms)
+                            step_eq += f"}} {{{f_diag_str}}} = {x[i]:.4g}"
+                            st.latex(step_eq)
+                            
+                        st.success(f"Final Solution Vector X: {x}")
+            else:
+                st.markdown("##### Manual Gauss Elimination Workspace")
+                st.info("Apply row operations step-by-step to the augmented matrix $[A | B]$ until you reach row echelon form, then find your solution.")
+                
+                if "manual_gauss_history" not in st.session_state:
+                    st.session_state.manual_gauss_history = []
+                if "manual_gauss_orig" not in st.session_state:
+                    st.session_state.manual_gauss_orig = None
+                if "manual_gauss_curr" not in st.session_state:
+                    st.session_state.manual_gauss_curr = None
+
+                c_init1, c_init2 = st.columns(2)
+                with c_init1:
+                    if st.button("Load Augmented Matrix Into Manual Workspace", type="primary", key="load_manual_aug"):
+                        A_mat = np.array(A_rows, dtype=float)
+                        b_col = np.array(b_vec, dtype=float)
+                        aug = np.column_stack((A_mat, b_col))
+                        st.session_state.manual_gauss_orig = aug.copy()
+                        st.session_state.manual_gauss_curr = aug.copy()
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+                with c_init2:
+                    if st.button("Reset Manual Workspace", key="reset_manual_aug"):
+                        st.session_state.manual_gauss_orig = None
+                        st.session_state.manual_gauss_curr = None
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+
+                if st.session_state.manual_gauss_curr is not None:
+                    st.markdown("---")
+                    mg_col1, mg_col2 = st.columns(2)
+                    with mg_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A | B]$")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_orig, n_div=1))
+                    with mg_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_curr, n_div=1))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    m_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="manual_op_input")
+                    
+                    mc1, mc2 = st.columns(2)
+                    with mc1:
+                        m_apply_btn = st.button("Execute Step", type="primary", key="manual_exec")
+                    with mc2:
+                        m_undo_btn = st.button("Undo Last Step", key="manual_undo")
+                        
+                    if m_apply_btn and m_op_input:
+                        try:
+                            updated = perform_row_operation(st.session_state.manual_gauss_curr, m_op_input)
+                            st.session_state.manual_gauss_history.append({"operation": m_op_input, "matrix": updated.copy()})
+                            st.session_state.manual_gauss_curr = updated
+                            st.success(f"Successfully applied: {m_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if m_undo_btn:
+                        if st.session_state.manual_gauss_history:
+                            st.session_state.manual_gauss_history.pop()
+                            if st.session_state.manual_gauss_history:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_gauss_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_gauss_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=1)}")
+                else:
+                    st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
+                
+        elif "LU" in method_choice:
+            lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
+            
+            A_curr = np.array(A_rows, dtype=float)
+            b_curr = np.array(b_vec, dtype=float)
+            
+            st.markdown("##### 1. Initial System Setup")
+            col_a_init, col_b_init = st.columns(2)
+            with col_a_init:
+                st.markdown("Coefficient Matrix:")
+                st.latex(f"A = {format_matrix_latex(A_curr)}")
+            with col_b_init:
+                st.markdown("Constant Vector:")
+                st.latex(f"B = {format_matrix_latex(b_curr.reshape(-1, 1))}")
+            
+            st.markdown("##### 2. Decomposition Strategy")
+            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $LY = B$ for $Y$, then $UX = Y$ for $X$.")
+            st.markdown("---")
+            
+            sub_option = st.selectbox(
+                "LU Breakdown View", 
+                [
+                    "(i) Show L and U Matrices (Factorization Details)",
+                    "(ii) Show Intermediate Steps (Solving Ly = B) & Formulas", 
+                    "(iii) Complete Solution (X)"
+                ]
+            )
+            
+            run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu")
+
+            if run_lu_clicked:
+                n = len(b_curr)
+                L = np.zeros((n, n))
+                U = np.zeros((n, n))
+                
+                if lu_type == "doolittle":
+                    for i in range(n):
+                        L[i, i] = 1.0
+                        for j in range(i, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(i))
+                            U[i, j] = A_curr[i, j] - s
+                        for j in range(i + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(i))
+                            L[j, i] = (A_curr[j, i] - s) / U[i, i]
+                else:
+                    for j in range(n):
+                        U[j, j] = 1.0
+                        for i in range(j, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(j))
+                            L[i, j] = A_curr[i, j] - s
+                        for i in range(j + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(j))
+                            U[j, i] = (A_curr[j, i] - s) / L[j, j]
+                
+                y = np.zeros(n)
+                for i in range(n):
+                    s = sum(L[i, k] * y[k] for k in range(i))
+                    y[i] = (b_curr[i] - s) / L[i, i]
+                    
+                x = np.zeros(n)
+                for i in range(n - 1, -1, -1):
+                    s = sum(U[i, k] * x[k] for k in range(i + 1, n))
+                    x[i] = (y[i] - s) / U[i, i]
+
+                if "(i)" in sub_option:
+                    st.markdown("##### Step-by-Step Calculation for L and U Matrices")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
+                    
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
+                                known_u = sum(L[i, k] * U[k, j] for k in range(i))
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                            for j in range(i + 1, n):
+                                known_l = sum(L[j, k] * U[k, i] for k in range(i))
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("---")
+                    st.markdown("##### Resulting Matrices L and U")
+                    col_l1, col_l2 = st.columns(2)
+                    with col_l1:
+                        st.markdown("Lower Triangular Matrix:")
+                        st.latex(f"L = {format_matrix_latex(L)}")
+                    with col_l2:
+                        st.markdown("Upper Triangular Matrix:")
+                        st.latex(f"U = {format_matrix_latex(U)}")
+
+                elif "(ii)" in sub_option:
+                    st.markdown("##### Step 2: Forward Substitution Details ($LY = B$ Lecture Notes Style)")
+                    st.latex(r"L \cdot Y = B")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else round(L[i, j], 2)) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
+                    for i in range(n):
+                        sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
+                        terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
+                        expl_str = f"y_{{ {i+1} }} = \\frac{{ {b_curr[i]} " + ("- " + " - ".join(terms_exp) if terms_exp else "") + f"}} {{{L[i, i]}}} = {y[i]:.4g}"
+                        st.latex(expl_str)
+                        
+                elif "(iii)" in sub_option:
+                    st.markdown("##### Complete Solution: Factorization, Step 2 & Step 3 Combined")
+                    
+                    st.markdown("#### 1. Step-by-Step Calculation for L and U Matrices")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
+                    
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
+                                known_u = sum(L[i, k] * U[k, j] for k in range(i))
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                            for j in range(i + 1, n):
+                                known_l = sum(L[j, k] * U[k, i] for k in range(i))
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("##### Resulting Matrices L and U")
+                    col_l1, col_l2 = st.columns(2)
+                    with col_l1:
+                        st.markdown("Lower Triangular Matrix:")
+                        st.latex(f"L = {format_matrix_latex(L)}")
+                    with col_l2:
+                        st.markdown("Upper Triangular Matrix:")
+                        st.latex(f"U = {format_matrix_latex(U)}")
+
+                    st.markdown("---")
+                    st.markdown("#### 2. Intermediate Vector Y ($LY = B$) Calculation:")
+                    st.latex(r"L \cdot Y = B")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else round(L[i, j], 2)) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
+                    for i in range(n):
+                        sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
+                        terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
+                        expl_str = f"y_{{ {i+1} }} = \\frac{{ {b_curr[i]} " + ("- " + " - ".join(terms_exp) if terms_exp else "") + f"}} {{{L[i, i]}}} = {y[i]:.4g}"
+                        st.latex(expl_str)
+                        
+                    st.markdown("---")
+                    st.markdown("#### 3. Back Substitution ($UX = Y$) Calculation:")
+                    st.latex(r"U \cdot X = Y")
+                    ux_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else round(U[i, j], 2)) for j in range(n)])
+                        ux_rows.append(f"{row_str} \\\\")
+                    ux_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ux_rows) + f"\n\\end{{bmatrix}}"
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"{val:.4g}" for val in y]) + " \\end{bmatrix}"
+                    st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Back Substitution Calculation for X:**")
+                    for i in range(n - 1, -1, -1):
+                        sub_sum_x = sum(U[i, k] * x[k] for k in range(i + 1, n))
+                        terms_x_exp = [f"{U[i, k]} \\cdot ({x[k]:.4g})" for k in range(i + 1, n)]
+                        expl_x_str = f"x_{{ {i+1} }} = \\frac{{ {y[i]:.4g} " + ("- " + " - ".join(terms_x_exp) if terms_x_exp else "") + f"}} {{{U[i, i]}}} = {x[i]:.4g}"
+                        st.latex(expl_x_str)
+                        
+                    st.markdown("##### Final Complete Solution Vector X:")
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
+        else:
+            calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys")
+
+            if calc_rank_clicked:
+                try:
+                    mat_a = np.array(A_rows, dtype=float)
+                    vec_b = np.array(b_vec, dtype=float)
+                    aug_mat = np.column_stack((mat_a, vec_b))
+                    
+                    r_a = np.linalg.matrix_rank(mat_a)
+                    r_aug = np.linalg.matrix_rank(aug_mat)
+                    
+                    st.markdown(f"* Rank of Coefficient Matrix A: **{r_a}**")
+                    st.markdown(f"* Rank of Augmented Matrix [A|B]: **{r_aug}**")
+                    
+                    if r_a != r_aug:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ (${r_a} \\neq {r_aug}$).")
+                        st.error("The system is **Inconsistent** (No solutions).")
+                    elif r_a == r_aug and r_a == n_vars:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} = {n_vars}$.")
+                        st.success("The system is **Consistent** with a **Unique Solution**.")
+                    else:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} = {n_vars}$.")
+                        st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
+                except Exception as e:
+                    st.error(f"Error calculating rank: {e}")
+
+        if n_vars in [2, 3]:
+            st.markdown("---")
+            with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
+                st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
+                
+                gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary")
+
+                if gen_plot_clicked:
+                    try:
+                        A_plot = np.array(A_rows, dtype=float)
+                        b_plot = np.array(b_vec, dtype=float)
+                        
+                        if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
+                            fig, ax = plt.subplots(figsize=(6, 6))
+                            x_vals = np.linspace(-10, 10, 400)
+                            for i in range(len(b_plot)):
+                                a1, a2 = A_plot[i, 0], A_plot[i, 1]
+                                c = b_plot[i]
+                                if a2 != 0:
+                                    y_vals = (c - a1 * x_vals) / a2
+                                    ax.plot(x_vals, y_vals, label=f"Eq {i+1}: {a1}x + {a2}y = {c}")
+                                else:
+                                    if a1 != 0:
+                                        x_const = c / a1
+                                        ax.axvline(x=x_const, label=f"Eq {i+1}: x = {x_const}")
+                            ax.axhline(0, color='black', linewidth=1)
+                            ax.axvline(0, color='black', linewidth=1)
+                            ax.set_xlim(-10, 10)
+                            ax.set_ylim(-10, 10)
+                            ax.grid(True, linestyle='--', alpha=0.6)
+                            ax.legend()
+                            ax.set_title("Geometrical Interpretation (2D Lines)")
+                            st.pyplot(fig)
+                            
+                        elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
+                            c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
+                            with c_plot_m:
+                                fig = plt.figure(figsize=(3.5, 3))
+                                ax = fig.add_subplot(111, projection='3d')
+                                
+                                x_lin = np.linspace(-5, 5, 15)
+                                y_lin = np.linspace(-5, 5, 15)
+                                X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
+                                
+                                colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
+                                for i in range(len(b_plot)):
+                                    a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                                    c = b_plot[i]
+                                    
+                                    eq_label = f"Eq {i+1}: {int(a1) if a1.is_integer() else a1}x + {int(a2) if a2.is_integer() else a2}y + {int(a3) if a3.is_integer() else a3}z = {int(c) if c.is_integer() else c}"
+                                    
+                                    if not np.isclose(a3, 0):
+                                        Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
+                                        Z_grid = np.clip(Z_grid, -20, 20)
+                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=eq_label)
+                                    else:
+                                        st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
+                                
+                                try:
+                                    sol_pt = np.linalg.solve(A_plot, b_plot)
+                                    ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=80, label='Solution')
+                                except Exception:
+                                    pass
+                                    
+                                ax.set_xlabel("X", fontsize=7)
+                                ax.set_ylabel("Y", fontsize=7)
+                                ax.set_zlabel("Z", fontsize=7)
+                                ax.tick_params(axis='both', which='major', labelsize=6)
+                                ax.set_title("3D Planes Intersection", fontsize=8)
+                                
+                                ax.legend(loc='upper left', fontsize=5, framealpha=0.7)
+                                st.pyplot(fig)
+                        else:
+                            st.warning("Visualization is optimized for 2 or 3 variable systems.")
+                    except Exception as err:
+                        st.error(f"Could not generate plot: {err}")
+
+    # --- TAB 2: INVERSE OF A MATRIX ---
+    elif selected_tab == "Inverse of a Matrix":
+        st.markdown("#### Inverse of a Matrix Workspace")
+        st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
+        
+        c_ta1, c_ta2 = st.columns([1, 3])
+        with c_ta1:
+            st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
+        with c_ta2:
+            matrix_input_str = st.text_area(
+                "Enter Matrix A (Row-by-row, space separated rows):",
+                value="1 0 2\n0 1 0\n1 0 3",
+                help="Example:\n1 0 2\n0 1 0\n1 0 3",
+                key="inverse_matrix_input",
+                label_visibility="collapsed",
+                height=90
+            )
+
+        try:
+            rows_input = matrix_input_str.strip().split("\n")
+            matrix_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_input if r.strip()]
+            A = np.array(matrix_data, dtype=float)
+        except Exception as e:
+            st.error(f"Invalid matrix format: {e}")
+            A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
+
+        c_m_lbl, c_m_inp = st.columns([1, 3])
+        with c_m_lbl:
+            st.markdown("**Select Method:**")
+        with c_m_inp:
+            method_choice = st.selectbox(
+                "Select Method:",
+                options=["Adjoint Formula", "Gauss-Jordan Elimination"],
+                key="inverse_method_dropdown",
+                label_visibility="collapsed"
+            )
+
+        c_mod_lbl, c_mod_inp = st.columns([1, 3])
+        with c_mod_lbl:
+            st.markdown("**Select Mode:**")
+        with c_mod_inp:
+            mode_choice = st.selectbox(
+                "Select Mode:",
+                options=["Automated", "Manual"],
+                help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
+                key="inverse_mode_dropdown",
+                label_visibility="collapsed"
+            )
+
+        st.markdown("---")
+
+        if mode_choice == "Automated":
+            compute_clicked = st.button("Compute Inverse (Automated)", type="primary", key="inverse_compute_btn")
+
+            if compute_clicked:
+                st.subheader(f"Automated Solution via {method_choice}")
+                
+                if A.shape[0] != A.shape[1]:
+                    st.error("Matrix must be square to find an inverse.")
+                else:
+                    det_A = np.linalg.det(A)
+                    if np.isclose(det_A, 0):
+                        st.warning("Matrix is singular (determinant is 0), so it has no inverse.")
+                    else:
+                        if method_choice == "Adjoint Formula":
+                            st.markdown(f"**1. Determinant of A:** $\\det(A) = {det_A:.4g}$")
+                            
+                            n = A.shape[0]
+                            if n == 2:
+                                adj = np.array([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]])
+                                st.markdown("**2. Adjoint Matrix:**")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
+                            else:
+                                cofactors = np.zeros((n, n))
+                                for i in range(n):
+                                    for j in range(n):
+                                        submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                        cofactors[i, j] =((-1)**(i + j)) * np.linalg.det(submat)
+                                adj = cofactors.T
+                                st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix:**")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
+                                
+                        else:  # Gauss-Jordan Elimination
+                            st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
+                            n = A.shape[0]
+                            identity = np.eye(n)
+                            augmented = np.column_stack((A, identity))
+                            
+                            st.latex(f"\\text{{Initial Augmented Matrix: }} [A \\mid I] = {format_augmented_matrix_latex(augmented, n_div=n)}")
+                            
+                            curr_aug = augmented.copy()
+                            step_num = 1
+                            
+                            for i in range(n):
+                                pivot = curr_aug[i, i]
+                                if np.isclose(pivot, 0):
+                                    for r in range(i+1, n):
+                                        if not np.isclose(curr_aug[r, i], 0):
+                                            curr_aug[[i, r]] = curr_aug[[r, i]]
+                                            st.markdown(f"Step {step_num}: Swap Row {i+1} with Row {r+1}")
+                                            st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                            step_num += 1
+                                            pivot = curr_aug[i, i]
+                                            break
+                                if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
+                                    curr_aug[i] = curr_aug[i] / pivot
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                    step_num += 1
+                                
+                                for j in range(n):
+                                    if j != i and not np.isclose(curr_aug[j, i], 0):
+                                        factor = curr_aug[j, i]
+                                        curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
+                                        st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                        step_num += 1
+                                        
+                            inv_mat = curr_aug[:, n:]
+                            st.success("Successfully reduced to Reduced Row Echelon Form!")
+                            st.markdown("**Final Inverse Matrix $A^{-1}$:**")
+                            st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat)}")
+        else:
+            st.subheader(f"Manual Practice Mode ({method_choice})")
+            st.markdown("Perform elementary row operations step-by-step on the augmented matrix $[A \\mid I]$ until you reduce $A$ to the identity matrix $I$, thereby transforming $I$ into $A^{-1}$.")
+
+            if "inv_manual_history" not in st.session_state:
+                st.session_state.inv_manual_history = []
+            if "inv_manual_orig" not in st.session_state:
+                st.session_state.inv_manual_orig = None
+            if "inv_manual_curr" not in st.session_state:
+                st.session_state.inv_manual_curr = None
+
+            c_im1, c_im2 = st.columns(2)
+            with c_im1:
+                if st.button("Load Augmented Matrix $[A \\mid I]$", type="primary", key="load_inv_manual"):
+                    n = A.shape[0]
+                    identity = np.eye(n)
+                    aug = np.column_stack((A, identity))
+                    st.session_state.inv_manual_orig = aug.copy()
+                    st.session_state.inv_manual_curr = aug.copy()
+                    st.session_state.inv_manual_history = []
+                    st.rerun()
+            with c_im2:
+                if st.button("Reset Workspace", key="reset_inv_manual"):
+                    st.session_state.inv_manual_orig = None
+                    st.session_state.inv_manual_curr = None
+                    st.session_state.inv_manual_history = []
+                    st.rerun()
+
+            if st.session_state.inv_manual_curr is not None:
+                n = A.shape[0]
+                st.markdown("---")
+                im_col1, im_col2 = st.columns(2)
+                with im_col1:
+                    st.markdown("##### 📌 Initial Augmented Matrix $[A \\mid I]$")
+                    st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_orig, n_div=n))
+                with im_col2:
+                    st.markdown("##### 🔄 Current Augmented Matrix State")
+                    st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_curr, n_div=n))
+                st.markdown("---")
+
+                st.markdown("##### 🛠️ Apply Row Operation")
+                st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                inv_op_input = st.text_input("Enter Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="inv_manual_op_input")
+                
+                ic1, ic2 = st.columns(2)
+                with ic1:
+                    inv_apply_btn = st.button("Execute Operation", type="primary", key="inv_manual_exec")
+                with ic2:
+                    inv_undo_btn = st.button("Undo Last Step", key="inv_manual_undo")
+                    
+                if inv_apply_btn and inv_op_input:
+                    try:
+                        updated = perform_row_operation(st.session_state.inv_manual_curr, inv_op_input)
+                        st.session_state.inv_manual_history.append({"operation": inv_op_input, "matrix": updated.copy()})
+                        st.session_state.inv_manual_curr = updated
+                        st.success(f"Successfully applied: {inv_op_input}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                        
+                if inv_undo_btn:
+                    if st.session_state.inv_manual_history:
+                        st.session_state.inv_manual_history.pop()
+                        if st.session_state.inv_manual_history:
+                            st.session_state.inv_manual_curr = st.session_state.inv_manual_history[-1]["matrix"].copy()
+                        else:
+                            st.session_state.inv_manual_curr = st.session_state.inv_manual_orig.copy()
+                        st.info("Reverted last operation.")
+                        st.rerun()
+                    else:
+                        st.warning("No operations to undo.")
+
+                if st.session_state.inv_manual_history:
+                    st.markdown("---")
+                    st.markdown("##### 📚 Step-by-Step Practice History")
+                    for idx, item in enumerate(st.session_state.inv_manual_history):
+                        with st.expander(f"Step {idx+1}: {item['operation']}"):
+                            st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n)}")
+            else:
+                st.caption("Click the button above to load the augmented matrix into the manual step-by-step workspace.")
+# Optional PDF generator support
+try:
+    from fpdf import FPDF
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+
+def format_matrix_latex(mat):
+    latex_rows = []
+    for row in mat:
+        row_elems = []
+        for val in row:
+            try:
+                f = Fraction(val).limit_denominator()
+                if f.denominator == 1:
+                    row_elems.append(str(f.numerator))
+                else:
+                    row_elems.append(f"\\frac{{{f.numerator}}}{{{f.denominator}}}")
+            except:
+                row_elems.append(str(val))
+        latex_rows.append(" & ".join(row_elems))
+    return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
+
+def format_augmented_matrix_latex(mat, n_div=None):
+    latex_rows = []
+    ncols = mat.shape[1]
+    div_idx = ncols - n_div - 1 if n_div is not None else ncols - 2
+    
+    for row in mat:
+        row_elems = []
+        for idx, val in enumerate(row):
+            try:
+                f = Fraction(val).limit_denominator()
+                if f.denominator == 1:
+                    val_str = str(f.numerator)
+                else:
+                    val_str = f"\\frac{{{f.numerator}}}{{{f.denominator}}}"
+            except:
+                val_str = str(val)
+            
+            if idx == div_idx:
+                row_elems.append(f"{val_str} \\mid")
+            else:
+                row_elems.append(val_str)
+        latex_rows.append(" & ".join(row_elems))
+    
+    return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
+
+def perform_row_operation(A, op_str):
+    op_str = op_str.replace(" ", "")
+    swap_match = re.match(r"R(\d+)<->R(\d+)", op_str)
+    if swap_match:
+        r1 = int(swap_match.group(1)) - 1
+        r2 = int(swap_match.group(2)) - 1
+        if not (0 <= r1 < len(A) and 0 <= r2 < len(A)):
+            raise ValueError(f"Row index out of range. Matrix has {len(A)} rows.")
+        new_A = A.copy()
+        new_A[[r1, r2]] = new_A[[r2, r1]]
+        return new_A
+
+    match = re.match(r"R(\d+)->(.*)", op_str)
+    if not match:
+        raise ValueError("Invalid format. Use 'R1 <-> R2' for swaps or 'R2 -> R2 - 3*R1' for replacement.")
+
+    target_idx = int(match.group(1)) - 1
+    expr = match.group(2)
+
+    if not (0 <= target_idx < len(A)):
+        raise ValueError(f"Target row index out of range. Matrix has {len(A)} rows.")
+
+    new_A = A.copy()
+    def replace_row(m):
+        r_num = int(m.group(1)) - 1
+        return f"A[{r_num}]"
+
+    python_expr = re.sub(r"R(\d+)", replace_row, expr)
+    try:
+        new_A[target_idx] = eval(python_expr, {"A": A, "np": np, "Fraction": Fraction})
+    except Exception as e:
+        raise ValueError(f"Error evaluating expression: {e}.")
+    return new_A
+
+def matrix_to_pretty_string(mat):
+    rows_str = []
+    for row in mat:
+        row_vals = []
+        for val in row:
+            try:
+                f = Fraction(val).limit_denominator()
+                row_vals.append(str(f) if f.denominator == 1 else f"{f.numerator}/{f.denominator}")
+            except:
+                row_vals.append(str(val))
+        rows_str.append("[ " + "  ".join(row_vals) + " ]")
+    return "\n".join(rows_str)
+
+def render():
+    st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
+    
+    tab_names = [
+        "Row Operations", 
+        "System of Linear Equations", 
+        "Inverse of a Matrix"
+    ]
+    
+    try:
+        query_tab = int(st.query_params.get("tab", 0))
+    except ValueError:
+        query_tab = 0
+        
+    if not (0 <= query_tab < len(tab_names)):
+        query_tab = 0
+
+    dynamic_key = f"u1_sub_tabs_key_{query_tab}"
+
+    selected_tab = st.radio(
+        "Select Sub-Topic", 
+        tab_names, 
+        index=query_tab, 
+        horizontal=True, 
+        label_visibility="collapsed",
+        key=dynamic_key
+    )
+    
+    current_tab_idx = tab_names.index(selected_tab)
+    if query_tab != current_tab_idx:
+        st.query_params["unit"] = "1"
+        st.query_params["tab"] = str(current_tab_idx)
+        st.rerun()
+    
+    st.divider()
+    
+    # --- TAB 0: ROW OPERATIONS ---
+    if selected_tab == "Row Operations":
+        st.markdown("#### Interactive Matrix Row Operations & RREF Practice")
+        st.markdown("Practice elementary row transformations, echelon forms, and matrix reduction.")
+
+        if "matrix_history" not in st.session_state:
+            st.session_state.matrix_history = []
+        if "current_matrix" not in st.session_state:
+            st.session_state.current_matrix = None
+        if "original_matrix" not in st.session_state:
+            st.session_state.original_matrix = None
+
+        col_set1, col_set2 = st.columns([1, 1])
+        with col_set1:
+            rows = st.number_input("Rows", min_value=1, max_value=20, value=3, step=1, key="u1_rows")
+        with col_set2:
+            cols = st.number_input("Columns", min_value=1, max_value=20, value=4, step=1, key="u1_cols")
+            
+        if st.button("Reset Workspace", key="u1_reset"):
+            st.session_state.matrix_history = []
+            st.session_state.current_matrix = None
+            st.session_state.original_matrix = None
+            st.rerun()
+
+        if st.session_state.original_matrix is None:
+            st.markdown("##### Step 1: Define Matrix Entries (by space separated entries)")
+
+            entered_rows = []
+            valid_input = True
+            input_warnings = []
+            has_empty_inputs = False
+
+            example_placeholder = "e.g. " + " ".join(str(j) for j in range(1, cols + 1))
+
+            temp_inputs = []
+            for i in range(rows):
+                c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
+                with c_lbl:
+                    st.markdown(f"**R{i+1}**")
+                with c_inp:
+                    row_input = st.text_input(
+                        f"Row {i+1} entries", 
+                        value="", 
+                        placeholder=example_placeholder, 
+                        key=f"row_{i}", 
+                        label_visibility="collapsed"
+                    )
+                temp_inputs.append(row_input)
+
+            for i, row_input in enumerate(temp_inputs):
+                stripped = row_input.strip()
+                if not stripped:
+                    has_empty_inputs = True
+                    valid_input = False
+                    continue
+                try:
+                    row_vals = [Fraction(x) for x in stripped.split()]
+                    if len(row_vals) > cols:
+                        valid_input = False
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but only {cols} columns are allowed.")
+                    elif len(row_vals) < cols:
+                        valid_input = False
+                        input_warnings.append(f"Row {i+1} has {len(row_vals)} elements, but {cols} columns are required.")
+                    entered_rows.append(row_vals)
+                except Exception:
+                    valid_input = False
+                    input_warnings.append(f"Row {i+1} contains invalid numeric entries or formatting.")
+
+            if not has_empty_inputs and input_warnings:
+                st.markdown("")
+                for warn in input_warnings:
+                    st.warning(f"⚠️ {warn}")
+
+            st.markdown("")
+            
+            init_col1, init_col2 = st.columns([1, 3])
+            with init_col1:
+                init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
+            
+            if init_btn:
+                if has_empty_inputs:
+                    st.error("Please fill in all row entries before initializing.")
+                elif valid_input:
+                    mat = np.array(entered_rows, dtype=object)
+                    st.session_state.original_matrix = mat.copy()
+                    st.session_state.current_matrix = mat.copy()
+                    st.session_state.matrix_history = []
+                    st.rerun()
+                else:
+                    st.error("Please resolve the column size discrepancies highlighted above.")
+        else:
+            st.markdown("---")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                st.markdown("##### 📌 Initial Given Matrix")
+                st.latex(format_matrix_latex(st.session_state.original_matrix))
+            with m_col2:
+                st.markdown("##### 🔄 Current Matrix State")
+                st.latex(format_matrix_latex(st.session_state.current_matrix))
+            st.markdown("---")
+
+            col_left, col_right = st.columns([1.2, 1])
+            with col_left:
+                st.markdown("##### 🛠️ Apply Row Operation")
+                st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                op_input = st.text_input("Enter Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="u1_op_input")
+                
+                c1, c2 = st.columns(2)
+                with c1:
+                    apply_btn = st.button("Execute Operation", type="primary", key="u1_exec")
+                with c2:
+                    undo_btn = st.button("Undo Last Step", key="u1_undo")
+                    
+                if apply_btn and op_input:
+                    try:
+                        updated = perform_row_operation(st.session_state.current_matrix, op_input)
+                        st.session_state.matrix_history.append({"operation": op_input, "matrix": updated.copy()})
+                        st.session_state.current_matrix = updated
+                        st.success(f"Successfully applied: {op_input}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                        
+                if undo_btn:
+                    if st.session_state.matrix_history:
+                        st.session_state.matrix_history.pop()
+                        if st.session_state.matrix_history:
+                            st.session_state.current_matrix = st.session_state.matrix_history[-1]["matrix"].copy()
+                        else:
+                            st.session_state.current_matrix = st.session_state.original_matrix.copy()
+                        st.info("Reverted last operation.")
+                        st.rerun()
+                    else:
+                        st.warning("No operations to undo.")
+
+            with col_right:
+                if st.session_state.matrix_history:
+                    st.markdown("##### 📥 Export History")
+                    
+                    history_text = f"Initial Matrix:\n{matrix_to_pretty_string(st.session_state.original_matrix)}\n\n"
+                    for idx, item in enumerate(st.session_state.matrix_history):
+                        history_text += f"Step {idx+1}: {item['operation']}\n{matrix_to_pretty_string(item['matrix'])}\n\n"
+                    history_text += f"Final Current Matrix:\n{matrix_to_pretty_string(st.session_state.current_matrix)}"
+                    
+                    st.download_button(
+                        label="📄 Download Text (.txt)",
+                        data=history_text,
+                        file_name="matrix_practice_history.txt",
+                        mime="text/plain",
+                        key="download_history_txt"
+                    )
+
+                    if PDF_AVAILABLE:
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_font("Courier", size=11)
+                        pdf.cell(200, 10, txt="Matrix Row Operations - Practice History", ln=True, align='C')
+                        pdf.ln(10)
+                        
+                        for line in history_text.split('\n'):
+                            pdf.cell(200, 6, txt=line, ln=True)
+                            
+                        pdf_bytes = bytes(pdf.output())
+                        st.download_button(
+                            label="📥 Download PDF (.pdf)",
+                            data=pdf_bytes,
+                            file_name="matrix_practice_history.pdf",
+                            mime="application/pdf",
+                            key="download_history_pdf"
+                        )
+
+            if st.session_state.matrix_history:
+                st.markdown("---")
+                st.markdown("##### 📚 Step-by-Step Practice History")
+                for idx, item in enumerate(st.session_state.matrix_history):
+                    with st.expander(f"Step {idx+1}: {item['operation']}"):
+                        st.latex(format_matrix_latex(item['matrix']))
+
+    # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
+    elif selected_tab == "System of Linear Equations":
+        st.markdown("#### System of Linear Equations Solver")
+        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
+        
+        method_choice = st.selectbox(
+            "Select Solution Technique", 
+            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
+        )
+        
+        n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
+        
+        st.markdown("##### Enter Coefficient Matrix A (space separated)")
+        
+        example_placeholder = "e.g. " + " ".join(str(j+1) for j in range(n_vars))
+        A_rows = []
+        for i in range(n_vars):
+            c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
+            with c_lbl:
+                st.markdown(f"**R{i+1}**")
+            with c_inp:
+                r_val = st.text_input(
+                    f"R{i+1}", 
+                    value="", 
+                    placeholder=example_placeholder, 
+                    key=f"gauss_a_{i}", 
+                    label_visibility="collapsed"
+                )
+            row_content = r_val.strip() if r_val.strip() else " ".join(str(j+1) for j in range(n_vars))
+            A_rows.append([float(x) for x in row_content.split()])
+            
+        st.markdown("##### Constant vector B (space separated)")
+        c_lbl_b, c_inp_b, c_space_b = st.columns([0.06, 0.3, 0.64])
+        with c_lbl_b:
+            st.markdown("**B**")
+        with c_inp_b:
+            b_val = st.text_input("Constant vector B", value="", placeholder="e.g. " + " ".join([str(j+1) for j in range(n_vars)]), key="gauss_b", label_visibility="collapsed")
+        b_content = b_val.strip() if b_val.strip() else " ".join([str(j+1) for j in range(n_vars)])
+        b_vec = [float(x) for x in b_content.split()]
+        
+        if method_choice == "Gauss Elimination":
+            gauss_mode = st.selectbox(
+                "Select Gauss Solver Mode",
+                ["(i) Automated Gauss Solver", "(ii) Manual Gauss Solver"]
+            )
+            
+            if gauss_mode == "(i) Automated Gauss Solver":
+                run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss")
+
+                if run_gauss_clicked:
+                    A_mat = np.array(A_rows, dtype=float)
+                    b_col = np.array(b_vec, dtype=float)
+                    aug = np.column_stack((A_mat, b_col))
+                    
+                    st.markdown("##### Automated Execution Steps")
+                    
+                    st.markdown("Step 0 Augmented matrix:")
+                    st.latex(f"[A|B] = {format_augmented_matrix_latex(aug, n_div=1)}")
+                    
+                    curr = aug.copy()
+                    step_count = 1
+                    
+                    for i in range(n_vars):
+                        if curr[i, i] == 0:
+                            for r in range(i+1, n_vars):
+                                if curr[r, i] != 0:
+                                    op_desc = f"R_{{ {i+1} }} \\leftrightarrow R_{{ {r+1} }}"
+                                    curr[[i, r]] = curr[[r, i]]
+                                    st.markdown(f"Step {step_count} Applying ${op_desc}$")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
+                                    step_count += 1
+                                    break
+                        for j in range(i+1, n_vars):
+                            if curr[i, i] != 0 and curr[j, i] != 0:
+                                factor = curr[j, i] / curr[i, i]
+                                f_frac = Fraction(factor).limit_denominator()
+                                if f_frac.denominator == 1:
+                                    f_str = str(f_frac.numerator)
+                                else:
+                                    f_str = f"\\frac{{{f_frac.numerator}}}{{{f_frac.denominator}}}"
+                                
+                                op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
+                                curr[j] = curr[j] - factor * curr[i]
+                                st.markdown(f"Step {step_count} Applying ${op_desc}$")
+                                st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
+                                step_count += 1
+                    
+                    st.markdown("---")
+                    st.markdown("##### Back-Substitution Steps")
+                    
+                    rank_A = np.linalg.matrix_rank(curr[:, :-1])
+                    rank_aug = np.linalg.matrix_rank(curr)
+                    num_rows, num_cols = curr.shape
+                    num_vars_local = num_cols - 1
+                    
+                    if rank_A < rank_aug:
+                        st.error("The system is inconsistent (No solution exists).")
+                    elif rank_A < num_vars_local:
+                        st.warning("The system has infinitely many solutions. Parametric back-substitution applies:")
+                        for r_idx in range(num_rows):
+                            row_vals = curr[r_idx, :-1]
+                            rhs_val = curr[r_idx, -1]
+                            if not np.allclose(row_vals, 0):
+                                non_zero_elems = [f"{row_vals[c]}x_{{ {c+1} }}" for c in range(len(row_vals)) if row_vals[c] != 0]
+                                eq_str = " + ".join(non_zero_elems) + f" = {rhs_val}"
+                                st.latex(eq_str)
+                    else:
+                        x = np.zeros(n_vars)
+                        for i in range(n_vars - 1, -1, -1):
+                            sub_sum = 0
+                            sub_terms = []
+                            for k in range(i + 1, n_vars):
+                                val_k = curr[i, k]
+                                if not np.isclose(val_k, 0):
+                                    sub_sum += val_k * x[k]
+                                    f_sub = Fraction(val_k).limit_denominator()
+                                    f_sub_str = str(f_sub) if f_sub.denominator == 1 else f"\\frac{{{f_sub.numerator}}}{{{f_sub.denominator}}}"
+                                    sub_terms.append(f"{f_sub_str} x_{{ {k+1} }}")
+                            
+                            rhs_val = curr[i, -1]
+                            diag_val = curr[i, i]
+                            numer = rhs_val - sub_sum
+                            x[i] = numer / diag_val
+                            
+                            f_diag = Fraction(diag_val).limit_denominator()
+                            f_rhs = Fraction(rhs_val).limit_denominator()
+                            f_diag_str = str(f_diag) if f_diag.denominator == 1 else f"\\frac{{{f_diag.numerator}}}{{{f_diag.denominator}}}"
+                            f_rhs_str = str(f_rhs) if f_rhs.denominator == 1 else f"\\frac{{{f_rhs.numerator}}}{{{f_rhs.denominator}}}"
+                            
+                            step_eq = f"x_{{ {i+1} }} = \\frac{{{f_rhs_str}"
+                            if sub_terms:
+                                step_eq += " - " + " - ".join(sub_terms)
+                            step_eq += f"}} {{{f_diag_str}}} = {x[i]:.4g}"
+                            st.latex(step_eq)
+                            
+                        st.success(f"Final Solution Vector X: {x}")
+            else:
+                st.markdown("##### Manual Gauss Elimination Workspace")
+                st.info("Apply row operations step-by-step to the augmented matrix $[A | B]$ until you reach row echelon form, then find your solution.")
+                
+                if "manual_gauss_history" not in st.session_state:
+                    st.session_state.manual_gauss_history = []
+                if "manual_gauss_orig" not in st.session_state:
+                    st.session_state.manual_gauss_orig = None
+                if "manual_gauss_curr" not in st.session_state:
+                    st.session_state.manual_gauss_curr = None
+
+                c_init1, c_init2 = st.columns(2)
+                with c_init1:
+                    if st.button("Load Augmented Matrix Into Manual Workspace", type="primary", key="load_manual_aug"):
+                        A_mat = np.array(A_rows, dtype=float)
+                        b_col = np.array(b_vec, dtype=float)
+                        aug = np.column_stack((A_mat, b_col))
+                        st.session_state.manual_gauss_orig = aug.copy()
+                        st.session_state.manual_gauss_curr = aug.copy()
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+                with c_init2:
+                    if st.button("Reset Manual Workspace", key="reset_manual_aug"):
+                        st.session_state.manual_gauss_orig = None
+                        st.session_state.manual_gauss_curr = None
+                        st.session_state.manual_gauss_history = []
+                        st.rerun()
+
+                if st.session_state.manual_gauss_curr is not None:
+                    st.markdown("---")
+                    mg_col1, mg_col2 = st.columns(2)
+                    with mg_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A | B]$")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_orig, n_div=1))
+                    with mg_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_curr, n_div=1))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    m_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="manual_op_input")
+                    
+                    mc1, mc2 = st.columns(2)
+                    with mc1:
+                        m_apply_btn = st.button("Execute Step", type="primary", key="manual_exec")
+                    with mc2:
+                        m_undo_btn = st.button("Undo Last Step", key="manual_undo")
+                        
+                    if m_apply_btn and m_op_input:
+                        try:
+                            updated = perform_row_operation(st.session_state.manual_gauss_curr, m_op_input)
+                            st.session_state.manual_gauss_history.append({"operation": m_op_input, "matrix": updated.copy()})
+                            st.session_state.manual_gauss_curr = updated
+                            st.success(f"Successfully applied: {m_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if m_undo_btn:
+                        if st.session_state.manual_gauss_history:
+                            st.session_state.manual_gauss_history.pop()
+                            if st.session_state.manual_gauss_history:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_gauss_curr = st.session_state.manual_gauss_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_gauss_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_gauss_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=1)}")
+                else:
+                    st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
+                
+        elif "LU" in method_choice:
+            lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
+            
+            A_curr = np.array(A_rows, dtype=float)
+            b_curr = np.array(b_vec, dtype=float)
+            
+            st.markdown("##### 1. Initial System Setup")
+            col_a_init, col_b_init = st.columns(2)
+            with col_a_init:
+                st.markdown("Coefficient Matrix:")
+                st.latex(f"A = {format_matrix_latex(A_curr)}")
+            with col_b_init:
+                st.markdown("Constant Vector:")
+                st.latex(f"B = {format_matrix_latex(b_curr.reshape(-1, 1))}")
+            
+            st.markdown("##### 2. Decomposition Strategy")
+            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $LY = B$ for $Y$, then $UX = Y$ for $X$.")
+            st.markdown("---")
+            
+            sub_option = st.selectbox(
+                "LU Breakdown View", 
+                [
+                    "(i) Show L and U Matrices (Factorization Details)",
+                    "(ii) Show Intermediate Steps (Solving Ly = B) & Formulas", 
+                    "(iii) Complete Solution (X)"
+                ]
+            )
+            
+            run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu")
+
+            if run_lu_clicked:
+                n = len(b_curr)
+                L = np.zeros((n, n))
+                U = np.zeros((n, n))
+                
+                if lu_type == "doolittle":
+                    for i in range(n):
+                        L[i, i] = 1.0
+                        for j in range(i, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(i))
+                            U[i, j] = A_curr[i, j] - s
+                        for j in range(i + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(i))
+                            L[j, i] = (A_curr[j, i] - s) / U[i, i]
+                else:
+                    for j in range(n):
+                        U[j, j] = 1.0
+                        for i in range(j, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(j))
+                            L[i, j] = A_curr[i, j] - s
+                        for i in range(j + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(j))
+                            U[j, i] = (A_curr[j, i] - s) / L[j, j]
+                
+                y = np.zeros(n)
+                for i in range(n):
+                    s = sum(L[i, k] * y[k] for k in range(i))
+                    y[i] = (b_curr[i] - s) / L[i, i]
+                    
+                x = np.zeros(n)
+                for i in range(n - 1, -1, -1):
+                    s = sum(U[i, k] * x[k] for k in range(i + 1, n))
+                    x[i] = (y[i] - s) / U[i, i]
+
+                if "(i)" in sub_option:
+                    st.markdown("##### Step-by-Step Calculation for L and U Matrices")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
+                    
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
+                                known_u = sum(L[i, k] * U[k, j] for k in range(i))
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                            for j in range(i + 1, n):
+                                known_l = sum(L[j, k] * U[k, i] for k in range(i))
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("---")
+                    st.markdown("##### Resulting Matrices L and U")
+                    col_l1, col_l2 = st.columns(2)
+                    with col_l1:
+                        st.markdown("Lower Triangular Matrix:")
+                        st.latex(f"L = {format_matrix_latex(L)}")
+                    with col_l2:
+                        st.markdown("Upper Triangular Matrix:")
+                        st.latex(f"U = {format_matrix_latex(U)}")
+
+                elif "(ii)" in sub_option:
+                    st.markdown("##### Step 2: Forward Substitution Details ($LY = B$ Lecture Notes Style)")
+                    st.latex(r"L \cdot Y = B")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else round(L[i, j], 2)) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
+                    for i in range(n):
+                        sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
+                        terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
+                        expl_str = f"y_{{ {i+1} }} = \\frac{{ {b_curr[i]} " + ("- " + " - ".join(terms_exp) if terms_exp else "") + f"}} {{{L[i, i]}}} = {y[i]:.4g}"
+                        st.latex(expl_str)
+                        
+                elif "(iii)" in sub_option:
+                    st.markdown("##### Complete Solution: Factorization, Step 2 & Step 3 Combined")
+                    
+                    st.markdown("#### 1. Step-by-Step Calculation for L and U Matrices")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
+                    
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
+                                known_u = sum(L[i, k] * U[k, j] for k in range(i))
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                            for j in range(i + 1, n):
+                                known_l = sum(L[j, k] * U[k, i] for k in range(i))
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("##### Resulting Matrices L and U")
+                    col_l1, col_l2 = st.columns(2)
+                    with col_l1:
+                        st.markdown("Lower Triangular Matrix:")
+                        st.latex(f"L = {format_matrix_latex(L)}")
+                    with col_l2:
+                        st.markdown("Upper Triangular Matrix:")
+                        st.latex(f"U = {format_matrix_latex(U)}")
+
+                    st.markdown("---")
+                    st.markdown("#### 2. Intermediate Vector Y ($LY = B$) Calculation:")
+                    st.latex(r"L \cdot Y = B")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else round(L[i, j], 2)) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
+                    for i in range(n):
+                        sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
+                        terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
+                        expl_str = f"y_{{ {i+1} }} = \\frac{{ {b_curr[i]} " + ("- " + " - ".join(terms_exp) if terms_exp else "") + f"}} {{{L[i, i]}}} = {y[i]:.4g}"
+                        st.latex(expl_str)
+                        
+                    st.markdown("---")
+                    st.markdown("#### 3. Back Substitution ($UX = Y$) Calculation:")
+                    st.latex(r"U \cdot X = Y")
+                    ux_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else round(U[i, j], 2)) for j in range(n)])
+                        ux_rows.append(f"{row_str} \\\\")
+                    ux_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ux_rows) + f"\n\\end{{bmatrix}}"
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"{val:.4g}" for val in y]) + " \\end{bmatrix}"
+                    st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Back Substitution Calculation for X:**")
+                    for i in range(n - 1, -1, -1):
+                        sub_sum_x = sum(U[i, k] * x[k] for k in range(i + 1, n))
+                        terms_x_exp = [f"{U[i, k]} \\cdot ({x[k]:.4g})" for k in range(i + 1, n)]
+                        expl_x_str = f"x_{{ {i+1} }} = \\frac{{ {y[i]:.4g} " + ("- " + " - ".join(terms_x_exp) if terms_x_exp else "") + f"}} {{{U[i, i]}}} = {x[i]:.4g}"
+                        st.latex(expl_x_str)
+                        
+                    st.markdown("##### Final Complete Solution Vector X:")
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
+        else:
+            calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys")
+
+            if calc_rank_clicked:
+                try:
+                    mat_a = np.array(A_rows, dtype=float)
+                    vec_b = np.array(b_vec, dtype=float)
+                    aug_mat = np.column_stack((mat_a, vec_b))
+                    
+                    r_a = np.linalg.matrix_rank(mat_a)
+                    r_aug = np.linalg.matrix_rank(aug_mat)
+                    
+                    st.markdown(f"* Rank of Coefficient Matrix A: **{r_a}**")
+                    st.markdown(f"* Rank of Augmented Matrix [A|B]: **{r_aug}**")
+                    
+                    if r_a != r_aug:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ (${r_a} \\neq {r_aug}$).")
+                        st.error("The system is **Inconsistent** (No solutions).")
+                    elif r_a == r_aug and r_a == n_vars:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} = {n_vars}$.")
+                        st.success("The system is **Consistent** with a **Unique Solution**.")
+                    else:
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} = {n_vars}$.")
+                        st.warning("The system is **Consistent** with **Infinitely Many Solutions**.")
+                except Exception as e:
+                    st.error(f"Error calculating rank: {e}")
+
+        if n_vars in [2, 3]:
+            st.markdown("---")
+            with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
+                st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
+                
+                gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary")
+
+                if gen_plot_clicked:
+                    try:
+                        A_plot = np.array(A_rows, dtype=float)
+                        b_plot = np.array(b_vec, dtype=float)
+                        
+                        if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
+                            fig, ax = plt.subplots(figsize=(6, 6))
+                            x_vals = np.linspace(-10, 10, 400)
+                            for i in range(len(b_plot)):
+                                a1, a2 = A_plot[i, 0], A_plot[i, 1]
+                                c = b_plot[i]
+                                if a2 != 0:
+                                    y_vals = (c - a1 * x_vals) / a2
+                                    ax.plot(x_vals, y_vals, label=f"Eq {i+1}: {a1}x + {a2}y = {c}")
+                                else:
+                                    if a1 != 0:
+                                        x_const = c / a1
+                                        ax.axvline(x=x_const, label=f"Eq {i+1}: x = {x_const}")
+                            ax.axhline(0, color='black', linewidth=1)
+                            ax.axvline(0, color='black', linewidth=1)
+                            ax.set_xlim(-10, 10)
+                            ax.set_ylim(-10, 10)
+                            ax.grid(True, linestyle='--', alpha=0.6)
+                            ax.legend()
+                            ax.set_title("Geometrical Interpretation (2D Lines)")
+                            st.pyplot(fig)
+                            
+                        elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
+                            c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
+                            with c_plot_m:
+                                fig = plt.figure(figsize=(3.5, 3))
+                                ax = fig.add_subplot(111, projection='3d')
+                                
+                                x_lin = np.linspace(-5, 5, 15)
+                                y_lin = np.linspace(-5, 5, 15)
+                                X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
+                                
+                                colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
+                                for i in range(len(b_plot)):
+                                    a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                                    c = b_plot[i]
+                                    
+                                    eq_label = f"Eq {i+1}: {int(a1) if a1.is_integer() else a1}x + {int(a2) if a2.is_integer() else a2}y + {int(a3) if a3.is_integer() else a3}z = {int(c) if c.is_integer() else c}"
+                                    
+                                    if not np.isclose(a3, 0):
+                                        Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
+                                        Z_grid = np.clip(Z_grid, -20, 20)
+                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=eq_label)
+                                    else:
+                                        st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
+                                
+                                try:
+                                    sol_pt = np.linalg.solve(A_plot, b_plot)
+                                    ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=80, label='Solution')
+                                except Exception:
+                                    pass
+                                    
+                                ax.set_xlabel("X", fontsize=7)
+                                ax.set_ylabel("Y", fontsize=7)
+                                ax.set_zlabel("Z", fontsize=7)
+                                ax.tick_params(axis='both', which='major', labelsize=6)
+                                ax.set_title("3D Planes Intersection", fontsize=8)
+                                
+                                ax.legend(loc='upper left', fontsize=5, framealpha=0.7)
+                                st.pyplot(fig)
+                        else:
+                            st.warning("Visualization is optimized for 2 or 3 variable systems.")
+                    except Exception as err:
+                        st.error(f"Could not generate plot: {err}")
+
+    # --- TAB 2: INVERSE OF A MATRIX ---
+    elif selected_tab == "Inverse of a Matrix":
+        st.markdown("#### Inverse of a Matrix Workspace")
+        st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
+        
+        c_ta1, c_ta2 = st.columns([1, 3])
+        with c_ta1:
+            st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
+        with c_ta2:
+            matrix_input_str = st.text_area(
+                "Enter Matrix A (Row-by-row, space separated rows):",
+                value="1 0 2\n0 1 0\n1 0 3",
+                help="Example:\n1 0 2\n0 1 0\n1 0 3",
+                key="inverse_matrix_input",
+                label_visibility="collapsed",
+                height=90
+            )
+
+        try:
+            rows_input = matrix_input_str.strip().split("\n")
+            matrix_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_input if r.strip()]
+            A = np.array(matrix_data, dtype=float)
+        except Exception as e:
+            st.error(f"Invalid matrix format: {e}")
+            A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
+
+        c_m_lbl, c_m_inp = st.columns([1, 3])
+        with c_m_lbl:
+            st.markdown("**Select Method:**")
+        with c_m_inp:
+            method_choice = st.selectbox(
+                "Select Method:",
+                options=["Adjoint Formula", "Gauss-Jordan Elimination"],
+                key="inverse_method_dropdown",
+                label_visibility="collapsed"
+            )
+
+        c_mod_lbl, c_mod_inp = st.columns([1, 3])
+        with c_mod_lbl:
+            st.markdown("**Select Mode:**")
+        with c_mod_inp:
+            mode_choice = st.selectbox(
+                "Select Mode:",
+                options=["Automated", "Manual"],
+                help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
+                key="inverse_mode_dropdown",
+                label_visibility="collapsed"
+            )
+
+        st.markdown("---")
+
+        compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn")
+
+        if compute_clicked:
+            if mode_choice == "Automated":
+                st.subheader(f"Automated Solution via {method_choice}")
+                
+                if A.shape[0] != A.shape[1]:
+                    st.error("Matrix must be square to find an inverse.")
+                else:
+                    det_A = np.linalg.det(A)
+                    if np.isclose(det_A, 0):
+                        st.warning("Matrix is singular (determinant is 0), so it has no inverse.")
+                    else:
+                        if method_choice == "Adjoint Formula":
+                            st.markdown(f"**1. Determinant of A:** $\\det(A) = {det_A:.4g}$")
+                            
+                            n = A.shape[0]
+                            if n == 2:
+                                adj = np.array([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]])
+                                st.markdown("**2. Adjoint Matrix:**")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
+                            else:
+                                cofactors = np.zeros((n, n))
+                                for i in range(n):
+                                    for j in range(n):
+                                        submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                        cofactors[i, j] =((-1)**(i + j)) * np.linalg.det(submat)
+                                adj = cofactors.T
+                                st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix:**")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
+                                
+                        else:  # Gauss-Jordan Elimination
+                            st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
+                            n = A.shape[0]
+                            identity = np.eye(n)
+                            augmented = np.column_stack((A, identity))
+                            
+                            st.latex(f"\\text{{Initial Augmented Matrix: }} [A \\mid I] = {format_augmented_matrix_latex(augmented, n_div=n)}")
+                            
+                            curr_aug = augmented.copy()
+                            step_num = 1
+                            
+                            for i in range(n):
+                                pivot = curr_aug[i, i]
+                                if np.isclose(pivot, 0):
+                                    for r in range(i+1, n):
+                                        if not np.isclose(curr_aug[r, i], 0):
+                                            curr_aug[[i, r]] = curr_aug[[r, i]]
+                                            st.markdown(f"Step {step_num}: Swap Row {i+1} with Row {r+1}")
+                                            st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                            step_num += 1
+                                            pivot = curr_aug[i, i]
+                                            break
+                                if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
+                                    curr_aug[i] = curr_aug[i] / pivot
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                    step_num += 1
+                                
+                                for j in range(n):
+                                    if j != i and not np.isclose(curr_aug[j, i], 0):
+                                        factor = curr_aug[j, i]
+                                        curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
+                                        st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
+                                        step_num += 1
+                                        
+                            inv_mat = curr_aug[:, n:]
+                            st.success("Successfully reduced to Reduced Row Echelon Form!")
+                            st.markdown("**Final Inverse Matrix $A^{-1}$:**")
+                            st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat)}")
+            # Updating the "Inverse of a Matrix" tab in Python/Streamlit to use the interactive row operation workspace (similar to Tab 0) when Gauss-Jordan Elimination and Manual mode are selected.
+
+# Find the code block for Tab 2 ("Inverse of a Matrix") and replace the manual mode section with the interactive row operations workspace:
+
+# [Inside TAB 2: INVERSE OF A MATRIX]
+# Replace the `else:` block for `mode_choice == "Manual"` with the following interactive code:
+
+            else:
+                st.subheader(f"Manual Practice Mode ({method_choice})")
+                st.markdown("Perform elementary row operations step-by-step on the augmented matrix $[A \\mid I]$ until you reduce $A$ to the identity matrix $I$, thereby transforming $I$ into $A^{-1}$.")
+
+                if "inv_manual_history" not in st.session_state:
+                    st.session_state.inv_manual_history = []
+                if "inv_manual_orig" not in st.session_state:
+                    st.session_state.inv_manual_orig = None
+                if "inv_manual_curr" not in st.session_state:
+                    st.session_state.inv_manual_curr = None
+
+                c_im1, c_im2 = st.columns(2)
+                with c_im1:
+                    if st.button("Load Augmented Matrix $[A \\mid I]$", type="primary", key="load_inv_manual"):
+                        n = A.shape[0]
+                        identity = np.eye(n)
+                        aug = np.column_stack((A, identity))
+                        st.session_state.inv_manual_orig = aug.copy()
+                        st.session_state.inv_manual_curr = aug.copy()
+                        st.session_state.inv_manual_history = []
+                        st.rerun()
+                with c_im2:
+                    if st.button("Reset Workspace", key="reset_inv_manual"):
+                        st.session_state.inv_manual_orig = None
+                        st.session_state.inv_manual_curr = None
+                        st.session_state.inv_manual_history = []
+                        st.rerun()
+
+                if st.session_state.inv_manual_curr is not None:
+                    n = A.shape[0]
+                    st.markdown("---")
+                    im_col1, im_col2 = st.columns(2)
+                    with im_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A \\mid I]$")
+                        st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_orig, n_div=n))
+                    with im_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_curr, n_div=n))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    inv_op_input = st.text_input("Enter Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="inv_manual_op_input")
+                    
+                    ic1, ic2 = st.columns(2)
+                    with ic1:
+                        inv_apply_btn = st.button("Execute Operation", type="primary", key="inv_manual_exec")
+                    with ic2:
+                        inv_undo_btn = st.button("Undo Last Step", key="inv_manual_undo")
+                        
+                    if inv_apply_btn and inv_op_input:
+                        try:
+                            updated = perform_row_operation(st.session_state.inv_manual_curr, inv_op_input)
+                            st.session_state.inv_manual_history.append({"operation": inv_op_input, "matrix": updated.copy()})
+                            st.session_state.inv_manual_curr = updated
+                            st.success(f"Successfully applied: {inv_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if inv_undo_btn:
+                        if st.session_state.inv_manual_history:
+                            st.session_state.inv_manual_history.pop()
+                            if st.session_state.inv_manual_history:
+                                st.session_state.inv_manual_curr = st.session_state.inv_manual_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.inv_manual_curr = st.session_state.inv_manual_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.inv_manual_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Step-by-Step Practice History")
+                        for idx, item in enumerate(st.session_state.inv_manual_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n)}")
+                else:
+                    st.caption("Click the button above to load the augmented matrix into the manual step-by-step workspace.")
