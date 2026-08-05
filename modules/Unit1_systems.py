@@ -563,7 +563,7 @@ def render():
                 st.latex(f"B = {format_matrix_latex(b_curr.reshape(-1, 1))}")
             
             st.markdown("##### 2. Decomposition Strategy")
-            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $Ly = B$ for $y$, then $UX = y$ for $X$.")
+            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $LY = B$ for $Y$, then $UX = Y$ for $X$.")
             st.markdown("---")
             
             sub_option = st.selectbox(
