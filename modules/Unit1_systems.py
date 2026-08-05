@@ -750,7 +750,7 @@ def render():
                         st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ (${r_a} \\neq {r_aug}$).")
                         st.error("The system is **Inconsistent** (No solutions).")
                     elif r_a == r_aug and r_a == n_vars:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} ({n_vars})$.")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} = {n_vars}$.")
                         st.success("The system is **Consistent** with a **Unique Solution**.")
                     else:
                         st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} < \\text{{number of unknowns}} = {n_vars}$.")
@@ -835,38 +835,145 @@ def render():
 
     # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
-        st.markdown("#### Matrix Multiplication & Invertible Matrices Practice")
-        st.info("Interactive workspace for testing matrix products, determinants, and finding matrix inverses ($A^{-1}$), plus elementary matrix properties.")
+        st.markdown("#### Inverse of a Matrix Workspace")
+        st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.markdown("##### Matrix A Input Validation")
-            a_input = st.text_area("Row-by-row values for A (comma separated rows)", value="1, 2\n3, 4", key="mat_a_val")
-        with col_m2:
-            st.markdown("##### Matrix B Input Validation")
-            b_input = st.text_area("Row-by-row values for B (comma separated rows)", value="5, 6\n7, 8", key="mat_b_val")
-            
-        if st.button("Compute Products & Inverses", type="primary", key="calc_mult"):
-            try:
-                A = np.array([[float(x) for x in r.split(",")] for r in a_input.strip().split("\n")], dtype=float)
-                B = np.array([[float(x) for x in r.split(",")] for r in b_input.strip().split("\n")], dtype=float)
+        # (i) Enter Input Matrix A
+        matrix_input_str = st.text_area(
+            "Enter Matrix A (Row-by-row, comma or space separated rows):",
+            value="1, 2\n3, 4",
+            help="Example:\n1 2\n3 4",
+            key="inverse_matrix_input"
+        )
+
+        # Parse matrix input safely
+        try:
+            rows_input = matrix_input_str.strip().split("\n")
+            matrix_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_input if r.strip()]
+            A = np.array(matrix_data, dtype=float)
+        except Exception as e:
+            st.error(f"Invalid matrix format: {e}")
+            A = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=float)
+
+        # (ii) First Dropdown Menu: Method Selection
+        method_choice = st.selectbox(
+            "Select Method:",
+            options=["Adjoint Formula", "Gauss-Jordan Elimination"],
+            key="inverse_method_dropdown"
+        )
+
+        # (iii) Second Dropdown Menu: Mode Selection (Manual vs Automated)
+        mode_choice = st.selectbox(
+            "Select Mode:",
+            options=["Automated", "Manual"],
+            help="Manual: Students perform steps on their own.\nAutomated: Solves with full step-by-step details.",
+            key="inverse_mode_dropdown"
+        )
+
+        st.markdown("---")
+
+        if st.button("Compute / Practice Inverse", type="primary", key="compute_inverse_btn"):
+            if mode_choice == "Automated":
+                st.subheader(f"Automated Solution via {method_choice}")
                 
-                st.markdown("##### Results:")
-                col_res1, col_res2, col_res3 = st.columns(3)
-                with col_res1:
-                    st.markdown("**Matrix Product ($A \\times B$)**")
-                    st.latex(format_matrix_latex(np.dot(A, B)))
-                with col_res2:
-                    st.markdown("**Inverse of A ($A^{-1}$)**")
-                    if A.shape[0] == A.shape[1] and np.linalg.det(A) != 0:
-                        st.latex(format_matrix_latex(np.linalg.inv(A)))
+                if A.shape[0] != A.shape[1]:
+                    st.error("Matrix must be square to find an inverse.")
+                else:
+                    det_A = np.linalg.det(A)
+                    if np.isclose(det_A, 0):
+                        st.warning("Matrix is singular (determinant is 0), so it has no inverse.")
                     else:
-                        st.warning("Matrix A is not square or is non-invertible (singular).")
-                with col_res3:
-                    st.markdown("**Inverse of B ($B^{-1}$)**")
-                    if B.shape[0] == B.shape[1] and np.linalg.det(B) != 0:
-                        st.latex(format_matrix_latex(np.linalg.inv(B)))
-                    else:
-                        st.warning("Matrix B is not square or is non-invertible (singular).")
-            except Exception as e:
-                st.error(f"Computation error: {e}. Check input dimensions.")
+                        if method_choice == "Adjoint Formula":
+                            st.markdown(f"**1. Determinant of A:** $\\det(A) = {det_A:.4g}$")
+                            
+                            n = A.shape[0]
+                            if n == 2:
+                                adj = np.array([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]])
+                                st.markdown("**2. Adjoint Matrix:**")
+                                st.latex(f"\\text{adj}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{adj}(A)$):**")
+                                st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
+                            else:
+                                # General minor/cofactor matrix for larger dimensions
+                                cofactors = np.zeros((n, n))
+                                for i in range(n):
+                                    for j in range(n):
+                                        submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                        cofactors[i, j] =((-1)**(i + j)) * np.linalg.det(submat)
+                                adj = cofactors.T
+                                st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
+                                st.latex(f"\\text{adj}(A) = {format_matrix_latex(adj)}")
+                                inv_A = adj / det_A
+                                st.markdown("**3. Inverse Matrix:**")
+                                st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
+                                
+                        else:  # Gauss-Jordan Elimination
+                            st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
+                            n = A.shape[0]
+                            identity = np.eye(n)
+                            augmented = np.column_stack((A, identity))
+                            
+                            st.latex(f"\\text{{Initial Augmented Matrix: }} [A \\mid I] = {format_augmented_matrix_latex(augmented)}")
+                            
+                            curr_aug = augmented.copy()
+                            step_num = 1
+                            
+                            # Forward and backward elimination for Gauss-Jordan RREF
+                            for i in range(n):
+                                # Pivot scaling
+                                pivot = curr_aug[i, i]
+                                if np.isclose(pivot, 0):
+                                    # Try to swap rows
+                                    for r in range(i+1, n):
+                                        if not np.isclose(curr_aug[r, i], 0):
+                                            curr_aug[[i, r]] = curr_aug[[r, i]]
+                                            st.markdown(f"Step {step_num}: Swap Row {i+1} with Row {r+1}")
+                                            st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                            step_num += 1
+                                            pivot = curr_aug[i, i]
+                                            break
+                                if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
+                                    curr_aug[i] = curr_aug[i] / pivot
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                    step_num += 1
+                                
+                                # Eliminate other rows
+                                for j in range(n):
+                                    if j != i and not np.isclose(curr_aug[j, i], 0):
+                                        factor = curr_aug[j, i]
+                                        curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
+                                        st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                        step_num += 1
+                                        
+                            inv_mat = curr_aug[:, n:]
+                            st.success("Successfully reduced to Reduced Row Echelon Form!")
+                            st.markdown("**Final Inverse Matrix $A^{-1}$:**")
+                            st.latex(f"A^{-1} = {format_matrix_latex(inv_mat)}")
+            else:
+                # Manual Mode
+                st.subheader(f"Manual Practice Mode ({method_choice})")
+                st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
+                
+                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1, 0\n0, 1", key="user_manual_inverse_input")
+                
+                if st.button("Verify My Inverse Matrix", key="verify_manual_inverse"):
+                    try:
+                        rows_ans = user_ans_str.strip().split("\n")
+                        user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
+                        User_Inv = np.array(user_data, dtype=float)
+                        
+                        # Correct inverse calculation via numpy for checking
+                        actual_inv = np.linalg.inv(A)
+                        
+                        if User_Inv.shape == actual_inv.shape and np.allclose(User_Inv, actual_inv, atol=1e-2):
+                            st.success("🎉 Excellent! Your calculated inverse matrix is correct.")
+                            st.latex(f"\\text{{Your Answer}} = {format_matrix_latex(User_Inv)}")
+                        else:
+                            st.error("❌ Your matrix does not match the correct inverse. Please review your steps and try again.")
+                            st.markdown("**Expected Correct Inverse for comparison:**")
+                            st.latex(f"A^{-1} = {format_matrix_latex(actual_inv)}")
+                    except Exception as err:
+                        st.error(f"Error parsing your matrix input: {err}")
