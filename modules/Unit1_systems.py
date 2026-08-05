@@ -127,7 +127,6 @@ def render():
     tab_names = [
         "Row Operations", 
         "System of Linear Equations", 
-        "LU Decomposition (Lecture 5)",
         "Inverse of a Matrix"
     ]
     
@@ -336,11 +335,11 @@ def render():
     # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
     elif selected_tab == "System of Linear Equations":
         st.markdown("#### System of Linear Equations Solver")
-        st.markdown("Solve $AX = B$ using Gauss Elimination or check system consistency and rank.")
+        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
         method_choice = st.selectbox(
             "Select Solution Technique", 
-            ["Gauss Elimination", "Rank & System Consistency"]
+            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
         n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
@@ -418,6 +417,7 @@ def render():
                                 st.latex(f"\\sim {format_augmented_matrix_latex(curr)}")
                                 step_count += 1
                     
+                    # Back-Substitution Calculation & Display steps
                     st.markdown("---")
                     st.markdown("##### Back-Substitution Steps")
                     
@@ -429,7 +429,14 @@ def render():
                     if rank_A < rank_aug:
                         st.error("The system is inconsistent (No solution exists).")
                     elif rank_A < num_vars_local:
-                        st.warning("The system has infinitely many solutions.")
+                        st.warning("The system has infinitely many solutions. Parametric back-substitution applies:")
+                        for r_idx in range(num_rows):
+                            row_vals = curr[r_idx, :-1]
+                            rhs_val = curr[r_idx, -1]
+                            if not np.allclose(row_vals, 0):
+                                non_zero_elems = [f"{row_vals[c]}x_{{ {c+1} }}" for c in range(len(row_vals)) if row_vals[c] != 0]
+                                eq_str = " + ".join(non_zero_elems) + f" = {rhs_val}"
+                                st.latex(eq_str)
                     else:
                         x = np.zeros(n_vars)
                         for i in range(n_vars - 1, -1, -1):
@@ -462,6 +469,8 @@ def render():
                         st.success(f"Final Solution Vector X: {x}")
             else:
                 st.markdown("##### Manual Gauss Elimination Workspace")
+                st.info("Apply row operations step-by-step to the augmented matrix $[A | B]$ until you reach row echelon form, then find your solution.")
+                
                 if "manual_gauss_history" not in st.session_state:
                     st.session_state.manual_gauss_history = []
                 if "manual_gauss_orig" not in st.session_state:
@@ -497,7 +506,10 @@ def render():
                         st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_curr))
                     st.markdown("---")
 
+                    st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
                     m_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="manual_op_input")
+                    
                     mc1, mc2 = st.columns(2)
                     with mc1:
                         m_apply_btn = st.button("Execute Step", type="primary", key="manual_exec")
@@ -525,6 +537,139 @@ def render():
                             st.rerun()
                         else:
                             st.warning("No operations to undo.")
+
+                    if st.session_state.manual_gauss_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_gauss_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'])}")
+                else:
+                    st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
+                
+        elif "LU" in method_choice:
+            lu_type = "doolittle" if "Doolittle" in method_choice else "crout"
+            
+            A_curr = np.array(A_rows, dtype=float)
+            b_curr = np.array(b_vec, dtype=float)
+            
+            st.markdown("##### 1. Initial System Setup")
+            col_a_init, col_b_init = st.columns(2)
+            with col_a_init:
+                st.markdown("Coefficient Matrix:")
+                st.latex(f"A = {format_matrix_latex(A_curr)}")
+            with col_b_init:
+                st.markdown("Constant Vector:")
+                st.latex(f"B = {format_matrix_latex(b_curr.reshape(-1, 1))}")
+            
+            st.markdown("##### 2. Decomposition Strategy")
+            st.markdown("Let $A = LU$. Then the system $AX = B$ becomes $L(UX) = B$. We first solve $LY = B$ for $Y$, then $UX = Y$ for $X$.")
+            st.markdown("---")
+            
+            sub_option = st.selectbox(
+                "LU Breakdown View", 
+                ["(i) Show L and U Matrices (Factorization)", "(ii) Show Intermediate Steps (Solving Ly = B)", "(iii) Final Solution Vector (X)"]
+            )
+            
+            if st.button("Compute LU Decomposition", type="primary", key="run_lu"):
+                n = len(b_curr)
+                L = np.zeros((n, n))
+                U = np.zeros((n, n))
+                
+                if lu_type == "doolittle":
+                    for i in range(n):
+                        L[i, i] = 1.0
+                        for j in range(i, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(i))
+                            U[i, j] = A_curr[i, j] - s
+                        for j in range(i + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(i))
+                            L[j, i] = (A_curr[j, i] - s) / U[i, i]
+                else:
+                    for i in range(n):
+                        U[i, i] = 1.0
+                        for j in range(i, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(i))
+                            L[j, i] = A_curr[j, i] - s
+                        for j in range(i + 1, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(i))
+                            U[i, j] = (A_curr[i, j] - s) / L[i, i]
+                
+                y = np.zeros(n)
+                for i in range(n):
+                    s = sum(L[i, k] * y[k] for k in range(i))
+                    y[i] = (b_curr[i] - s) / L[i, i]
+                    
+                x = np.zeros(n)
+                for i in range(n - 1, -1, -1):
+                    s = sum(U[i, k] * x[k] for k in range(i + 1, n))
+                    x[i] = (y[i] - s) / U[i, i]
+
+                st.markdown("##### 3. Factorized Result Matrices")
+                col_l1, col_l2 = st.columns(2)
+                with col_l1:
+                    st.markdown("Lower Triangular Matrix:")
+                    st.latex(f"L = {format_matrix_latex(L)}")
+                with col_l2:
+                    st.markdown("Upper Triangular Matrix:")
+                    st.latex(f"U = {format_matrix_latex(U)}")
+
+                st.markdown("---")
+                if "(ii)" in sub_option:
+                    st.markdown("**Intermediate Solution Vector ($y$ solving $Ly = B$):**")
+                    st.latex(r"Y = " + format_matrix_latex(y.reshape(-1, 1)) + r"^T")
+                elif "(iii)" in sub_option:
+                    st.markdown("**Final Solution Vector ($X$ solving $UX = y$):**")
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)) + r"^T")
+                st.markdown("---")
+                if "(ii)" in sub_option:
+                    st.markdown("**Step 2: Forward Substitution ($LY = B$):**")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else L[i, j]) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Solving for $y$:**")
+                    for i in range(n):
+                        known_sum_terms = []
+                        for k in range(i):
+                            term_val = L[i, k] * y[k]
+                            known_sum_terms.append(f"{int(L[i, k])}({int(y[k]) if y[k].is_integer() else y[k]})")
+                        
+                        eq_line = f"y_{{ {i+1} }} = {int(y[i]) if y[i].is_integer() else y[i]}"
+                        if i > 0 and known_sum_terms:
+                            sum_str = " - ".join(known_sum_terms)
+                            st.latex(f"({int(L[i, i])})y_{{ {i+1} }} + {sum_str} = {b_curr[i]} \\implies {eq_line}")
+                        else:
+                            st.latex(f"y_{{ {i+1} }} = {int(y[i]) if y[i].is_integer() else y[i]}")
+                            
+                    st.latex(r"Y = " + format_matrix_latex(y.reshape(-1, 1)) + r"^T")
+
+                elif "(iii)" in sub_option:
+                    st.markdown("**Step 3: Back Substitution ($UX = Y$):**")
+                    ux_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(U[i, j]) if U[i, j].is_integer() else U[i, j]) for j in range(n)])
+                        ux_rows.append(f"{row_str} \\\\")
+                    ux_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ux_rows) + f"\n\\end{{bmatrix}}"
+                    
+                    x_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"x_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    y_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in y]) + " \\end{bmatrix}"
+                    
+                    st.latex(f"{ux_matrix_str} {x_vars_str} = {y_matrix_str}")
+                    
+                    st.markdown("**Solving for $X$:**")
+                    for i in range(n - 1, -1, -1):
+                        st.latex(f"x_{{ {i+1} }} = {int(x[i]) if x[i].is_integer() else round(x[i], 4)}")
+                        
+                    st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)) + r"^T")
         else:
             if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
                 try:
@@ -547,107 +692,82 @@ def render():
                 except Exception as e:
                     st.error(f"Error calculating rank: {e}")
 
-    # --- TAB 2: LU DECOMPOSITION (LECTURE 5) ---
-    elif selected_tab == "LU Decomposition (Lecture 5)":
-        st.markdown("#### Lecture 5: LU Decomposition (Doolittle & Crout Methods)")
-        st.markdown("Factorize matrix $A = LU$ and solve non-homogeneous linear systems $AX = B$ using triangular decomposition and forward/back-substitution.")
-        
-        lu_method = st.selectbox(
-            "Select Factorization Method",
-            ["Doolittle’s Method ($l_{ii} = 1$)", "Crout’s Method ($u_{ii} = 1$)"]
-        )
-        
-        lu_n = st.number_input("Matrix dimension (n x n)", min_value=2, max_value=5, value=3, step=1, key="lu_dim")
-        
-        st.markdown("##### Enter Square Matrix A")
-        lu_rows_input = []
-        for i in range(lu_n):
-            c_lbl, c_inp, c_space = st.columns([0.06, 0.3, 0.64])
-            with c_lbl:
-                st.markdown(f"**R{i+1}**")
-            with c_inp:
-                r_val = st.text_input(
-                    f"LU_R{i+1}", 
-                    value="", 
-                    placeholder="e.g. " + " ".join(str(j+1) for j in range(lu_n)), 
-                    key=f"lu_a_{i}", 
-                    label_visibility="collapsed"
-                )
-            row_content = r_val.strip() if r_val.strip() else " ".join(str(j+1) for j in range(lu_n))
-            lu_rows_input.append([float(x) for x in row_content.split()])
-
-        st.markdown("##### Enter Constant Vector B (for solving $AX = B$)")
-        c_lbl_lub, c_inp_lub, c_space_lub = st.columns([0.06, 0.3, 0.64])
-        with c_lbl_lub:
-            st.markdown("**B**")
-        with c_inp_lub:
-            lub_val = st.text_input("Constant vector B for LU", value="", placeholder="e.g. " + " ".join([str(j+1) for j in range(lu_n)]), key="lu_b_vec", label_visibility="collapsed")
-        lub_content = lub_val.strip() if lub_val.strip() else " ".join([str(j+1) for j in range(lu_n)])
-        lub_vec = [float(x) for x in lub_content.split()]
-
-        if st.button("Perform Complete LU Decomposition & Solve System", type="primary", key="run_lecture_lu"):
-            try:
-                A_mat = np.array(lu_rows_input, dtype=float)
-                B_vec = np.array(lub_vec, dtype=float)
-                n = lu_n
+        if n_vars in [2, 3]:
+            st.markdown("---")
+            with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
+                st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 
-                L = np.zeros((n, n))
-                U = np.zeros((n, n))
-                
-                is_doolittle = "Doolittle" in lu_method
-                
-                st.markdown("---")
-                st.markdown("##### Step 1: Factorization Process ($A = LU$)")
-                
-                if is_doolittle:
-                    st.markdown("*Using **Doolittle’s Normalization** ($l_{ii} = 1$)*")
-                    for i in range(n):
-                        L[i, i] = 1.0
-                        for j in range(i, n):
-                            s = sum(L[i, k] * U[k, j] for k in range(i))
-                            U[i, j] = A_mat[i, j] - s
-                        for j in range(i + 1, n):
-                            s = sum(L[j, k] * U[k, i] for k in range(i))
-                            L[j, i] = (A_mat[j, i] - s) / U[i, i]
-                else:
-                    st.markdown("*Using **Crout’s Normalization** ($u_{ii} = 1$)*")
-                    for i in range(n):
-                        U[i, i] = 1.0
-                        for j in range(i, n):
-                            s = sum(L[j, k] * U[k, i] for k in range(i))
-                            L[j, i] = A_mat[j, i] - s
-                        for j in range(i + 1, n):
-                            s = sum(L[i, k] * U[k, j] for k in range(i))
-                            U[i, j] = (A_mat[i, j] - s) / L[i, i]
+                if st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary"):
+                    try:
+                        A_plot = np.array(A_rows, dtype=float)
+                        b_plot = np.array(b_vec, dtype=float)
+                        
+                        if A_plot.shape[0] >= 2 and A_plot.shape[1] == 2:
+                            fig, ax = plt.subplots(figsize=(6, 6))
+                            x_vals = np.linspace(-10, 10, 400)
+                            for i in range(len(b_plot)):
+                                a1, a2 = A_plot[i, 0], A_plot[i, 1]
+                                c = b_plot[i]
+                                if a2 != 0:
+                                    y_vals = (c - a1 * x_vals) / a2
+                                    ax.plot(x_vals, y_vals, label=f"Eq {i+1}: {a1}x + {a2}y = {c}")
+                                else:
+                                    if a1 != 0:
+                                        x_const = c / a1
+                                        ax.axvline(x=x_const, label=f"Eq {i+1}: x = {x_const}")
+                            ax.axhline(0, color='black', linewidth=1)
+                            ax.axvline(0, color='black', linewidth=1)
+                            ax.set_xlim(-10, 10)
+                            ax.set_ylim(-10, 10)
+                            ax.grid(True, linestyle='--', alpha=0.6)
+                            ax.legend()
+                            ax.set_title("Geometrical Interpretation (2D Lines)")
+                            st.pyplot(fig)
+                            
+                        elif A_plot.shape[0] >= 3 and A_plot.shape[1] == 3:
+                            c_plot_l, c_plot_m, c_plot_r = st.columns([1, 2, 1])
+                            with c_plot_m:
+                                fig = plt.figure(figsize=(3.5, 3))
+                                ax = fig.add_subplot(111, projection='3d')
+                                
+                                x_lin = np.linspace(-5, 5, 15)
+                                y_lin = np.linspace(-5, 5, 15)
+                                X_grid, Y_grid = np.meshgrid(x_lin, y_lin)
+                                
+                                colors = ['cyan', 'magenta', 'yellow', 'orange', 'green']
+                                for i in range(len(b_plot)):
+                                    a1, a2, a3 = A_plot[i, 0], A_plot[i, 1], A_plot[i, 2]
+                                    c = b_plot[i]
+                                    
+                                    eq_label = f"Eq {i+1}: {int(a1) if a1.is_integer() else a1}x + {int(a2) if a2.is_integer() else a2}y + {int(a3) if a3.is_integer() else a3}z = {int(c) if c.is_integer() else c}"
+                                    
+                                    if not np.isclose(a3, 0):
+                                        Z_grid = (c - a1 * X_grid - a2 * Y_grid) / a3
+                                        Z_grid = np.clip(Z_grid, -20, 20)
+                                        ax.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.4, color=colors[i % len(colors)], label=eq_label)
+                                    else:
+                                        st.info(f"Equation {i+1} is a vertical plane ($a_3 = 0$) and is omitted from the 3D surface grid.")
+                                
+                                try:
+                                    sol_pt = np.linalg.solve(A_plot, b_plot)
+                                    ax.scatter([sol_pt[0]], [sol_pt[1]], [sol_pt[2]], color='red', s=80, label='Solution')
+                                except Exception:
+                                    pass
+                                    
+                                ax.set_xlabel("X", fontsize=7)
+                                ax.set_ylabel("Y", fontsize=7)
+                                ax.set_zlabel("Z", fontsize=7)
+                                ax.tick_params(axis='both', which='major', labelsize=6)
+                                ax.set_title("3D Planes Intersection", fontsize=8)
+                                
+                                ax.legend(loc='upper left', fontsize=5, framealpha=0.7)
+                                st.pyplot(fig)
+                        else:
+                            st.warning("Visualization is optimized for 2 or 3 variable systems.")
+                    except Exception as err:
+                        st.error(f"Could not generate plot: {err}")
 
-                col_res_l, col_res_u = st.columns(2)
-                with col_res_l:
-                    st.markdown("**Lower Triangular Matrix ($L$)**")
-                    st.latex(f"L = {format_matrix_latex(L)}")
-                with col_res_u:
-                    st.markdown("**Upper Triangular Matrix ($U$)**")
-                    st.latex(f"U = {format_matrix_latex(U)}")
-
-                st.markdown("---")
-                st.markdown("##### Step 2: Forward Substitution ($LY = B$)")
-                Y_vec = np.zeros(n)
-                for i in range(n):
-                    s = sum(L[i, k] * Y_vec[k] for k in range(i))
-                    Y_vec[i] = (B_vec[i] - s) / L[i, i]
-                st.latex(f"Y = \\begin{{bmatrix}} " + " \\\\ ".join([f"{val:.4g}" for val in Y_vec]) + " \\end{bmatrix}")
-
-                st.markdown("---")
-                st.markdown("##### Step 3: Back Substitution ($UX = Y$)")
-                X_vec = np.zeros(n)
-                for i in range(n - 1, -1, -1):
-                    s = sum(U[i, k] * X_vec[k] for k in range(i + 1, n))
-                    X_vec[i] = (Y_vec[i] - s) / U[i, i]
-                st.latex(f"X = \\begin{{bmatrix}} " + " \\\\ ".join([f"{val:.4g}" for val in X_vec]) + " \\end{bmatrix}")
-                st.success("LU Decomposition and system solution computed successfully according to Lecture 5 specs!")
-            except Exception as e:
-                st.error(f"Error during LU decomposition: {e}")
-
-    # --- TAB 3: INVERSE OF A MATRIX ---
+    # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
         st.markdown("#### Matrix Multiplication & Invertible Matrices Practice")
         st.info("Interactive workspace for testing matrix products, determinants, and finding matrix inverses ($A^{-1}$), plus elementary matrix properties.")
