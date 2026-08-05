@@ -31,7 +31,6 @@ def format_matrix_latex(mat):
 def format_augmented_matrix_latex(mat, n_div=None):
     latex_rows = []
     ncols = mat.shape[1]
-    # If n_div is specified, place the divider before the last n_div columns
     div_idx = ncols - n_div - 1 if n_div is not None else ncols - 2
     
     for row in mat:
@@ -102,32 +101,6 @@ def matrix_to_pretty_string(mat):
     return "\n".join(rows_str)
 
 def render():
-    st.markdown("""
-        <style>
-        div.stButton > button {
-            width: auto !important;
-            display: inline-block !important;
-            flex: unset !important;
-            padding: 0.35rem 1rem !important;
-            font-size: 0.9rem !important;
-            border-radius: 4px;
-        }
-        /* Specific rule to make buttons 1/4 (25%) width in the Inverse tab */
-        div[data-testid="stVerticalBlock"] div.stButton > button#inverse_compute_btn {
-            width: 25% !important;
-        }
-        div.stTextInput input {
-            max-width: 160px !important;
-        }
-        div.stNumberInput {
-            max-width: 180px !important;
-        }
-        div.stSelectbox {
-            max-width: 250px !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
     
     tab_names = [
@@ -848,8 +821,8 @@ def render():
         # (i) Enter Input Matrix A
         matrix_input_str = st.text_area(
             "Enter Matrix A (Row-by-row, comma or space separated rows):",
-            value="1, 2\n3, 4",
-            help="Example:\n1 2\n3 4",
+            value="1, 0, 2\n0, 1, 0\n1, 0, 3",
+            help="Example:\n1 0 2\n0 1 0\n1 0 3",
             key="inverse_matrix_input"
         )
 
@@ -860,7 +833,7 @@ def render():
             A = np.array(matrix_data, dtype=float)
         except Exception as e:
             st.error(f"Invalid matrix format: {e}")
-            A = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=float)
+            A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
         # (ii) First Dropdown Menu: Method Selection
         method_choice = st.selectbox(
@@ -879,7 +852,12 @@ def render():
 
         st.markdown("---")
 
-        if st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn"):
+        # Force button to be precisely 1/4 (25%) width using a 4-column layout container
+        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 1])
+        with btn_col1:
+            compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn")
+
+        if compute_clicked:
             if mode_choice == "Automated":
                 st.subheader(f"Automated Solution via {method_choice}")
                 
@@ -958,7 +936,7 @@ def render():
                 st.subheader(f"Manual Practice Mode ({method_choice})")
                 st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
                 
-                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1, 0\n0, 1", key="user_manual_inverse_input")
+                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1, 0, 0\n0, 1, 0\n0, 0, 1", key="user_manual_inverse_input")
                 
                 if st.button("Verify My Inverse Matrix", key="verify_manual_inverse"):
                     try:
