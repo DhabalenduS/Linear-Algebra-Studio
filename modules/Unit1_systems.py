@@ -28,9 +28,12 @@ def format_matrix_latex(mat):
         latex_rows.append(" & ".join(row_elems))
     return "\\begin{bmatrix}\n" + " \\\\\n".join(latex_rows) + "\n\\end{bmatrix}"
 
-def format_augmented_matrix_latex(mat):
+def format_augmented_matrix_latex(mat, n_div=None):
     latex_rows = []
     ncols = mat.shape[1]
+    # If n_div is specified, place the divider before the last n_div columns
+    div_idx = ncols - n_div - 1 if n_div is not None else ncols - 2
+    
     for row in mat:
         row_elems = []
         for idx, val in enumerate(row):
@@ -43,7 +46,7 @@ def format_augmented_matrix_latex(mat):
             except:
                 val_str = str(val)
             
-            if idx == ncols - 2:
+            if idx == div_idx:
                 row_elems.append(f"{val_str} \\mid")
             else:
                 row_elems.append(val_str)
@@ -108,6 +111,10 @@ def render():
             padding: 0.35rem 1rem !important;
             font-size: 0.9rem !important;
             border-radius: 4px;
+        }
+        /* Specific rule to make buttons 1/4 (25%) width in the Inverse tab */
+        div[data-testid="stVerticalBlock"] div.stButton > button#inverse_compute_btn {
+            width: 25% !important;
         }
         div.stTextInput input {
             max-width: 160px !important;
@@ -386,7 +393,7 @@ def render():
                     st.markdown("##### Automated Execution Steps")
                     
                     st.markdown("Step 0 Augmented matrix:")
-                    st.latex(f"[A|B] = {format_augmented_matrix_latex(aug)}")
+                    st.latex(f"[A|B] = {format_augmented_matrix_latex(aug, n_div=1)}")
                     
                     curr = aug.copy()
                     step_count = 1
@@ -398,7 +405,7 @@ def render():
                                     op_desc = f"R_{{ {i+1} }} \\leftrightarrow R_{{ {r+1} }}"
                                     curr[[i, r]] = curr[[r, i]]
                                     st.markdown(f"Step {step_count} Applying ${op_desc}$")
-                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr)}")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
                                     step_count += 1
                                     break
                         for j in range(i+1, n_vars):
@@ -413,7 +420,7 @@ def render():
                                 op_desc = f"R_{{ {j+1} }} \\rightarrow R_{{ {j+1} }} - {f_str}R_{{ {i+1} }}"
                                 curr[j] = curr[j] - factor * curr[i]
                                 st.markdown(f"Step {step_count} Applying ${op_desc}$")
-                                st.latex(f"\\sim {format_augmented_matrix_latex(curr)}")
+                                st.latex(f"\\sim {format_augmented_matrix_latex(curr, n_div=1)}")
                                 step_count += 1
                     
                     st.markdown("---")
@@ -498,10 +505,10 @@ def render():
                     mg_col1, mg_col2 = st.columns(2)
                     with mg_col1:
                         st.markdown("##### 📌 Initial Augmented Matrix $[A | B]$")
-                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_orig))
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_orig, n_div=1))
                     with mg_col2:
                         st.markdown("##### 🔄 Current Augmented Matrix State")
-                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_curr))
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_gauss_curr, n_div=1))
                     st.markdown("---")
 
                     st.markdown("##### 🛠️ Apply Row Operation on Augmented Matrix")
@@ -541,7 +548,7 @@ def render():
                         st.markdown("##### 📚 Manual Step-by-Step History")
                         for idx, item in enumerate(st.session_state.manual_gauss_history):
                             with st.expander(f"Step {idx+1}: {item['operation']}"):
-                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'])}")
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=1)}")
                 else:
                     st.caption("Click the button above to load your system's augmented matrix into the manual practice workspace.")
                 
@@ -872,7 +879,7 @@ def render():
 
         st.markdown("---")
 
-        if st.button("Compute / Practice Inverse", type="primary", key="compute_inverse_btn"):
+        if st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn"):
             if mode_choice == "Automated":
                 st.subheader(f"Automated Solution via {method_choice}")
                 
@@ -890,12 +897,11 @@ def render():
                             if n == 2:
                                 adj = np.array([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]])
                                 st.markdown("**2. Adjoint Matrix:**")
-                                st.latex(f"\\text{adj}(A) = {format_matrix_latex(adj)}")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
-                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{adj}(A)$):**")
+                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
                                 st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
                             else:
-                                # General minor/cofactor matrix for larger dimensions
                                 cofactors = np.zeros((n, n))
                                 for i in range(n):
                                     for j in range(n):
@@ -903,7 +909,7 @@ def render():
                                         cofactors[i, j] =((-1)**(i + j)) * np.linalg.det(submat)
                                 adj = cofactors.T
                                 st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
-                                st.latex(f"\\text{adj}(A) = {format_matrix_latex(adj)}")
+                                st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
                                 st.markdown("**3. Inverse Matrix:**")
                                 st.latex(f"A^{-1} = {format_matrix_latex(inv_A)}")
@@ -914,38 +920,34 @@ def render():
                             identity = np.eye(n)
                             augmented = np.column_stack((A, identity))
                             
-                            st.latex(f"\\text{{Initial Augmented Matrix: }} [A \\mid I] = {format_augmented_matrix_latex(augmented)}")
+                            st.latex(f"\\text{{Initial Augmented Matrix: }} [A \\mid I] = {format_augmented_matrix_latex(augmented, n_div=n)}")
                             
                             curr_aug = augmented.copy()
                             step_num = 1
                             
-                            # Forward and backward elimination for Gauss-Jordan RREF
                             for i in range(n):
-                                # Pivot scaling
                                 pivot = curr_aug[i, i]
                                 if np.isclose(pivot, 0):
-                                    # Try to swap rows
                                     for r in range(i+1, n):
                                         if not np.isclose(curr_aug[r, i], 0):
                                             curr_aug[[i, r]] = curr_aug[[r, i]]
                                             st.markdown(f"Step {step_num}: Swap Row {i+1} with Row {r+1}")
-                                            st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                            st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                             step_num += 1
                                             pivot = curr_aug[i, i]
                                             break
                                 if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
                                     curr_aug[i] = curr_aug[i] / pivot
                                     st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
-                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                    st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                     step_num += 1
                                 
-                                # Eliminate other rows
                                 for j in range(n):
                                     if j != i and not np.isclose(curr_aug[j, i], 0):
                                         factor = curr_aug[j, i]
                                         curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
                                         st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
-                                        st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug)}")
+                                        st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                         step_num += 1
                                         
                             inv_mat = curr_aug[:, n:]
@@ -953,7 +955,6 @@ def render():
                             st.markdown("**Final Inverse Matrix $A^{-1}$:**")
                             st.latex(f"A^{-1} = {format_matrix_latex(inv_mat)}")
             else:
-                # Manual Mode
                 st.subheader(f"Manual Practice Mode ({method_choice})")
                 st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
                 
@@ -965,7 +966,6 @@ def render():
                         user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
                         User_Inv = np.array(user_data, dtype=float)
                         
-                        # Correct inverse calculation via numpy for checking
                         actual_inv = np.linalg.inv(A)
                         
                         if User_Inv.shape == actual_inv.shape and np.allclose(User_Inv, actual_inv, atol=1e-2):
