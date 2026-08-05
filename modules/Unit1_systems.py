@@ -210,7 +210,11 @@ def render():
                     st.warning(f"⚠️ {warn}")
 
             st.markdown("")
-            init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init")
+            
+            # --- Modified here: 1/4 width layout for initialization button ---
+            init_col1, init_col2 = st.columns([1, 3])
+            with init_col1:
+                init_btn = st.button("Initialize Matrix & Start Practice", type="primary", key="u1_init", use_container_width=True)
             
             if init_btn:
                 if has_empty_inputs:
@@ -358,7 +362,12 @@ def render():
             )
             
             if gauss_mode == "(i) Automated Gauss Solver":
-                if st.button("Run Automated Gauss Solver", type="primary", key="run_gauss"):
+                # --- Modified here: 1/4 width layout for automated gauss solver button ---
+                run_col1, run_col2 = st.columns([1, 3])
+                with run_col1:
+                    run_gauss_clicked = st.button("Run Automated Gauss Solver", type="primary", key="run_gauss", use_container_width=True)
+
+                if run_gauss_clicked:
                     A_mat = np.array(A_rows, dtype=float)
                     b_col = np.array(b_vec, dtype=float)
                     aug = np.column_stack((A_mat, b_col))
@@ -553,7 +562,12 @@ def render():
                 ]
             )
             
-            if st.button("Compute LU Decomposition", type="primary", key="run_lu"):
+            # --- Modified here: 1/4 width layout for LU computation button ---
+            lu_col1, lu_col2 = st.columns([1, 3])
+            with lu_col1:
+                run_lu_clicked = st.button("Compute LU Decomposition", type="primary", key="run_lu", use_container_width=True)
+
+            if run_lu_clicked:
                 n = len(b_curr)
                 L = np.zeros((n, n))
                 U = np.zeros((n, n))
@@ -714,7 +728,12 @@ def render():
                     st.markdown("##### Final Complete Solution Vector X:")
                     st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
         else:
-            if st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys"):
+            # --- Modified here: 1/4 width layout for rank/consistency check button ---
+            rk_col1, rk_col2 = st.columns([1, 3])
+            with rk_col1:
+                calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys", use_container_width=True)
+
+            if calc_rank_clicked:
                 try:
                     mat_a = np.array(A_rows, dtype=float)
                     vec_b = np.array(b_vec, dtype=float)
@@ -743,7 +762,12 @@ def render():
             with st.expander("📉 Optional Geometrical Visualization (View Intersection of Lines/Planes)", expanded=True):
                 st.markdown("Visualize how the equations geometrically intersect in space (2D lines or 3D planes).")
                 
-                if st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary"):
+                # --- Modified here: 1/4 width layout for geometry plot button ---
+                gp_col1, gp_col2 = st.columns([1, 3])
+                with gp_col1:
+                    gen_plot_clicked = st.button("Generate Geometry Plot", key="gen_geom_plot", type="primary", use_container_width=True)
+
+                if gen_plot_clicked:
                     try:
                         A_plot = np.array(A_rows, dtype=float)
                         b_plot = np.array(b_vec, dtype=float)
@@ -818,7 +842,7 @@ def render():
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        # (i) Updated label to space-separated rows
+        # Updated label to space-separated rows
         matrix_input_str = st.text_area(
             "Enter Matrix A (Row-by-row, space separated rows):",
             value="1 0 2\n0 1 0\n1 0 3",
@@ -835,14 +859,14 @@ def render():
             st.error(f"Invalid matrix format: {e}")
             A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
-        # (ii) First Dropdown Menu: Method Selection
+        # First Dropdown Menu: Method Selection
         method_choice = st.selectbox(
             "Select Method:",
             options=["Adjoint Formula", "Gauss-Jordan Elimination"],
             key="inverse_method_dropdown"
         )
 
-        # (iii) Second Dropdown Menu: Mode Selection (Manual vs Automated)
+        # Second Dropdown Menu: Mode Selection (Manual vs Automated)
         mode_choice = st.selectbox(
             "Select Mode:",
             options=["Automated", "Manual"],
@@ -852,7 +876,7 @@ def render():
 
         st.markdown("---")
 
-        # (ii) Professional 1/4 width layout for button using columns [1, 3]
+        # Professional 1/4 width layout for button using columns [1, 3]
         btn_col1, btn_col2 = st.columns([1, 3])
         with btn_col1:
             compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn", use_container_width=True)
@@ -877,7 +901,6 @@ def render():
                                 st.markdown("**2. Adjoint Matrix:**")
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
-                                # (iii) Fixed A^{-1} proper LaTeX escaping
                                 st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                             else:
@@ -891,7 +914,6 @@ def render():
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
                                 st.markdown("**3. Inverse Matrix:**")
-                                # (iii) Fixed A^{-1} proper LaTeX escaping
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                                 
                         else:  # Gauss-Jordan Elimination
@@ -933,7 +955,6 @@ def render():
                             inv_mat = curr_aug[:, n:]
                             st.success("Successfully reduced to Reduced Row Echelon Form!")
                             st.markdown("**Final Inverse Matrix $A^{-1}$:**")
-                            # (iii) Fixed A^{-1} proper LaTeX escaping
                             st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat)}")
             else:
                 st.subheader(f"Manual Practice Mode ({method_choice})")
@@ -941,7 +962,12 @@ def render():
                 
                 user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
                 
-                if st.button("Verify My Inverse Matrix", key="verify_manual_inverse"):
+                # --- Modified here: 1/4 width layout for verify inverse button ---
+                v_col1, v_col2 = st.columns([1, 3])
+                with v_col1:
+                    verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary", use_container_width=True)
+
+                if verify_clicked:
                     try:
                         rows_ans = user_ans_str.strip().split("\n")
                         user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
@@ -955,7 +981,6 @@ def render():
                         else:
                             st.error("❌ Your matrix does not match the correct inverse. Please review your steps and try again.")
                             st.markdown("**Expected Correct Inverse for comparison:**")
-                            # (iii) Fixed A^{-1} proper LaTeX escaping
                             st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
                     except Exception as err:
                         st.error(f"Error parsing your matrix input: {err}")
