@@ -881,7 +881,7 @@ def render():
         st.markdown("---")
 
         if mode_choice == "Automated":
-            compute_clicked = st.button("Compute / Practice Inverse", type="primary", key="inverse_compute_btn")
+            compute_clicked = st.button("Compute Inverse (Automated)", type="primary", key="inverse_compute_btn")
 
             if compute_clicked:
                 st.subheader(f"Automated Solution via {method_choice}")
@@ -1036,8 +1036,7 @@ def render():
                         with st.expander(f"Step {idx+1}: {item['operation']}"):
                             st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n)}")
             else:
-                st.caption("Click the button above to load the augmented matrix into the manual step-by-step workspace.")t Axes3D  # noqa: F401
-
+                st.caption("Click the button above to load the augmented matrix into the manual step-by-step workspace.")
 # Optional PDF generator support
 try:
     from fpdf import FPDF
