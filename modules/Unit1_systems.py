@@ -952,28 +952,90 @@ def render():
                             st.success("Successfully reduced to Reduced Row Echelon Form!")
                             st.markdown("**Final Inverse Matrix $A^{-1}$:**")
                             st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat)}")
+            # Updating the "Inverse of a Matrix" tab in Python/Streamlit to use the interactive row operation workspace (similar to Tab 0) when Gauss-Jordan Elimination and Manual mode are selected.
+
+# Find the code block for Tab 2 ("Inverse of a Matrix") and replace the manual mode section with the interactive row operations workspace:
+
+# [Inside TAB 2: INVERSE OF A MATRIX]
+# Replace the `else:` block for `mode_choice == "Manual"` with the following interactive code:
+
             else:
                 st.subheader(f"Manual Practice Mode ({method_choice})")
-                st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
-                
-                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
-                
-                verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary")
+                st.markdown("Perform elementary row operations step-by-step on the augmented matrix $[A \\mid I]$ until you reduce $A$ to the identity matrix $I$, thereby transforming $I$ into $A^{-1}$.")
 
-                if verify_clicked:
-                    try:
-                        rows_ans = user_ans_str.strip().split("\n")
-                        user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
-                        User_Inv = np.array(user_data, dtype=float)
+                if "inv_manual_history" not in st.session_state:
+                    st.session_state.inv_manual_history = []
+                if "inv_manual_orig" not in st.session_state:
+                    st.session_state.inv_manual_orig = None
+                if "inv_manual_curr" not in st.session_state:
+                    st.session_state.inv_manual_curr = None
+
+                c_im1, c_im2 = st.columns(2)
+                with c_im1:
+                    if st.button("Load Augmented Matrix $[A \\mid I]$", type="primary", key="load_inv_manual"):
+                        n = A.shape[0]
+                        identity = np.eye(n)
+                        aug = np.column_stack((A, identity))
+                        st.session_state.inv_manual_orig = aug.copy()
+                        st.session_state.inv_manual_curr = aug.copy()
+                        st.session_state.inv_manual_history = []
+                        st.rerun()
+                with c_im2:
+                    if st.button("Reset Workspace", key="reset_inv_manual"):
+                        st.session_state.inv_manual_orig = None
+                        st.session_state.inv_manual_curr = None
+                        st.session_state.inv_manual_history = []
+                        st.rerun()
+
+                if st.session_state.inv_manual_curr is not None:
+                    n = A.shape[0]
+                    st.markdown("---")
+                    im_col1, im_col2 = st.columns(2)
+                    with im_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A \\mid I]$")
+                        st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_orig, n_div=n))
+                    with im_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_augmented_matrix_latex(st.session_state.inv_manual_curr, n_div=n))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    inv_op_input = st.text_input("Enter Operation", placeholder="e.g., R2 -> R2 - 2*R1", key="inv_manual_op_input")
+                    
+                    ic1, ic2 = st.columns(2)
+                    with ic1:
+                        inv_apply_btn = st.button("Execute Operation", type="primary", key="inv_manual_exec")
+                    with ic2:
+                        inv_undo_btn = st.button("Undo Last Step", key="inv_manual_undo")
                         
-                        actual_inv = np.linalg.inv(A)
-                        
-                        if User_Inv.shape == actual_inv.shape and np.allclose(User_Inv, actual_inv, atol=1e-2):
-                            st.success("🎉 Excellent! Your calculated inverse matrix is correct.")
-                            st.latex(f"\\text{{Your Answer}} = {format_matrix_latex(User_Inv)}")
+                    if inv_apply_btn and inv_op_input:
+                        try:
+                            updated = perform_row_operation(st.session_state.inv_manual_curr, inv_op_input)
+                            st.session_state.inv_manual_history.append({"operation": inv_op_input, "matrix": updated.copy()})
+                            st.session_state.inv_manual_curr = updated
+                            st.success(f"Successfully applied: {inv_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if inv_undo_btn:
+                        if st.session_state.inv_manual_history:
+                            st.session_state.inv_manual_history.pop()
+                            if st.session_state.inv_manual_history:
+                                st.session_state.inv_manual_curr = st.session_state.inv_manual_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.inv_manual_curr = st.session_state.inv_manual_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
                         else:
-                            st.error("❌ Your matrix does not match the correct inverse. Please review your steps and try again.")
-                            st.markdown("**Expected Correct Inverse for comparison:**")
-                            st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
-                    except Exception as err:
-                        st.error(f"Error parsing your matrix input: {err}")
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.inv_manual_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Step-by-Step Practice History")
+                        for idx, item in enumerate(st.session_state.inv_manual_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n)}")
+                else:
+                    st.caption("Click the button above to load the augmented matrix into the manual step-by-step workspace.")
