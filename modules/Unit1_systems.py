@@ -588,14 +588,14 @@ def render():
                             s = sum(L[j, k] * U[k, i] for k in range(i))
                             L[j, i] = (A_curr[j, i] - s) / U[i, i]
                 else:
-                    for i in range(n):
-                        U[i, i] = 1.0
-                        for j in range(i, n):
-                            s = sum(L[j, k] * U[k, i] for k in range(i))
-                            L[j, i] = A_curr[j, i] - s
-                        for j in range(i + 1, n):
-                            s = sum(L[i, k] * U[k, j] for k in range(i))
-                            U[i, j] = (A_curr[i, j] - s) / L[i, i]
+                    for j in range(n):
+                        U[j, j] = 1.0
+                        for i in range(j, n):
+                            s = sum(L[i, k] * U[k, j] for k in range(j))
+                            L[i, j] = A_curr[i, j] - s
+                        for i in range(j + 1, n):
+                            s = sum(L[j, k] * U[k, i] for k in range(j))
+                            U[j, i] = (A_curr[j, i] - s) / L[j, j]
                 
                 y = np.zeros(n)
                 for i in range(n):
@@ -609,17 +609,24 @@ def render():
 
                 if "(i)" in sub_option:
                     st.markdown("##### Step-by-Step Calculation for L and U Matrices")
-                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$ row-by-row and column-by-column:")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
                     
-                    for i in range(n):
-                        for j in range(i, n):
-                            if lu_type == "doolittle":
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
                                 known_u = sum(L[i, k] * U[k, j] for k in range(i))
                                 st.latex(f"U_{{{i+1}{j+1}}} = A_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} L_{{{i+1}k}} U_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
-                        for j in range(i + 1, n):
-                            if lu_type == "doolittle":
+                            for j in range(i + 1, n):
                                 known_l = sum(L[j, k] * U[k, i] for k in range(i))
                                 st.latex(f"L_{{{j+1}{i+1}}} = \\frac{{1}}{{U_{{{i+1}{i+1}}}}} \\left( A_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} L_{{{j+1}k}} U_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"L_{{{i+1}{j+1}}} = A_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} L_{{{i+1}k}} U_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"U_{{{j+1}{i+1}}} = \\frac{{1}}{{L_{{{j+1}{j+1}}}}} \\left( A_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} L_{{{j+1}k}} U_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
 
                     st.markdown("---")
                     st.markdown("##### 3. Factorized Result Matrices")
