@@ -747,7 +747,7 @@ def render():
                     st.markdown(f"* Rank of Augmented Matrix [A|B]: **{r_aug}**")
                     
                     if r_a != r_aug:
-                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ (${r_a} \\neq {r_aug}$). Therefore, the system is **Inconsistent**.")
+                        st.markdown(f"Thus, $\\text{{Rank}}(A) \\neq \\text{{Rank}}([A|B])$ (${r_a} \\neq {r_aug}$).")
                         st.error("The system is **Inconsistent** (No solutions).")
                     elif r_a == r_aug and r_a == n_vars:
                         st.markdown(f"Thus, $\\text{{Rank}}(A) = \\text{{Rank}}([A|B]) = {r_a} = \\text{{number of unknowns}} ({n_vars})$.")
