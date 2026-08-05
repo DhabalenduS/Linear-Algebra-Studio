@@ -661,9 +661,42 @@ def render():
                         st.latex(expl_str)
                         
                 elif "(iii)" in sub_option:
-                    st.markdown("##### Complete Solution: Step 2 & Step 3 Combined")
-                    st.markdown("#### 1. Intermediate Vector Y ($LY = B$) Calculation:")
+                    st.markdown("##### Complete Solution: Factorization, Step 2 & Step 3 Combined")
+                    
+                    st.markdown("#### 1. Step-by-Step Calculation for L and U Matrices")
+                    st.markdown(f"Using **{'Doolittle’s method' if lu_type == 'doolittle' else 'Crout’s method'}**, we match entries of $A = L \\cdot U$:")
+                    
+                    if lu_type == "doolittle":
+                        for i in range(n):
+                            for j in range(i, n):
+                                known_u = sum(L[i, k] * U[k, j] for k in range(i))
+                                st.latex(f"u_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_u:.2g}) = {U[i, j]:.4g}")
+                            for j in range(i + 1, n):
+                                known_l = sum(L[j, k] * U[k, i] for k in range(i))
+                                st.latex(f"l_{{{j+1}{i+1}}} = \\frac{{1}}{{u_{{{i+1}{i+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {i} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {U[i, i]:.4g} }} = {L[j, i]:.4g}")
+                    else:
+                        for j in range(n):
+                            for i in range(j, n):
+                                known_l = sum(L[i, k] * U[k, j] for k in range(j))
+                                st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
+                            for i in range(j + 1, n):
+                                known_u = sum(L[j, k] * U[k, i] for k in range(j))
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+
+                    st.markdown("---")
+                    st.markdown("#### 2. Intermediate Vector Y ($LY = B$) Calculation:")
                     st.latex(r"L \cdot Y = B")
+                    
+                    ly_rows = []
+                    for i in range(n):
+                        row_str = " & ".join([str(int(L[i, j]) if L[i, j].is_integer() else round(L[i, j], 2)) for j in range(n)])
+                        ly_rows.append(f"{row_str} \\\\")
+                    ly_matrix_str = f"\\begin{{bmatrix}}\n" + "\n".join(ly_rows) + f"\n\\end{{bmatrix}}"
+                    y_vars_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([f"y_{{ {i+1} }}" for i in range(n)]) + " \\end{bmatrix}"
+                    b_matrix_str = f"\\begin{{bmatrix}} " + " \\\\ ".join([str(int(val) if val.is_integer() else val) for val in b_curr]) + " \\end{bmatrix}"
+                    st.latex(f"{ly_matrix_str} {y_vars_str} = {b_matrix_str}")
+                    
+                    st.markdown("**Step-by-Step Calculation for Intermediate Vector Y:**")
                     for i in range(n):
                         sub_sum_y = sum(L[i, k] * y[k] for k in range(i))
                         terms_exp = [f"{L[i, k]} \\cdot ({y[k]:.4g})" for k in range(i)]
@@ -671,7 +704,7 @@ def render():
                         st.latex(expl_str)
                         
                     st.markdown("---")
-                    st.markdown("#### 2. Back Substitution ($UX = Y$) Calculation:")
+                    st.markdown("#### 3. Back Substitution ($UX = Y$) Calculation:")
                     st.latex(r"U \cdot X = Y")
                     ux_rows = []
                     for i in range(n):
