@@ -1,4 +1,4 @@
-# 17th try to implement solution by inverse method (Gauss-Elimination)
+# 1st try to display all calculations incuding cofactors in automated Adjoint Method
 import streamlit as st
 import numpy as np
 import re
@@ -100,6 +100,13 @@ def matrix_to_pretty_string(mat):
                 row_vals.append(str(val))
         rows_str.append("[ " + "  ".join(row_vals) + " ]")
     return "\n".join(rows_str)
+
+def format_val_str(val):
+    try:
+        f = Fraction(val).limit_denominator()
+        return str(f.numerator) if f.denominator == 1 else f"\\frac{{{f.numerator}}}{{{f.denominator}}}"
+    except:
+        return str(val)
 
 def render():
     st.markdown("### Unit-I: Systems of Linear Equations & Matrices")
@@ -669,7 +676,7 @@ def render():
                                 st.latex(f"l_{{{i+1}{j+1}}} = a_{{{i+1}{j+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{i+1}k}} u_{{k{j+1}}} = {A_curr[i, j]} - ({known_l:.2g}) = {L[i, j]:.4g}")
                             for i in range(j + 1, n):
                                 known_u = sum(L[j, k] * U[k, i] for k in range(j))
-                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_u:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
+                                st.latex(f"u_{{{j+1}{i+1}}} = \\frac{{1}}{{l_{{{j+1}{j+1}}}}} \\left( a_{{{j+1}{i+1}}} - \\sum_{{k=1}}^{{ {j} }} l_{{{j+1}k}} u_{{k{i+1}}} \\right) = \\frac{{ {A_curr[j, i]} - ({known_l:.2g}) }}{{ {L[j, j]:.4g} }} = {U[j, i]:.4g}")
 
                     st.markdown("##### Resulting Matrices L and U")
                     col_l1, col_l2 = st.columns(2)
@@ -1084,7 +1091,10 @@ def render():
                         st.warning("Matrix is singular (determinant is 0), so it has no inverse.")
                     else:
                         if method_choice == "Adjoint Formula":
-                            st.markdown(f"**1. Determinant of A:** $\\det(A) = {det_A:.4g}$")
+                            det_val_str = format_val_str(det_A)
+                            st.markdown(f"**1. Compute the determinant of matrix:**")
+                            st.latex(f"\\det(A) = {det_val_str} \\neq 0")
+                            st.markdown("Since $\\det(A) \\neq 0$, $A^{-1}$ exists.")
                             
                             n = A.shape[0]
                             if n == 2:
@@ -1096,16 +1106,57 @@ def render():
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                             else:
                                 cofactors = np.zeros((n, n))
-                                for i in range(n):
-                                    for j in range(n):
-                                        submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
-                                        cofactors[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
+                                st.markdown("**2. Find the cofactor matrix $C$:**")
+                                
+                                for row_idx in range(n):
+                                    row_cofactors_latex = []
+                                    for col_idx in range(n):
+                                        submat = np.delete(np.delete(A, row_idx, axis=0), col_idx, axis=1)
+                                        sign = (-1)**(row_idx + col_idx)
+                                        sign_str = "+" if sign > 0 else "-"
+                                        
+                                        a = submat[0, 0]
+                                        b = submat[0, 1]
+                                        c = submat[1, 0]
+                                        d = submat[1, 1]
+                                        
+                                        prod1 = a * d
+                                        prod2 = b * c
+                                        det_2x2 = prod1 - prod2
+                                        cofactor_val = sign * det_2x2
+                                        cofactors[row_idx, col_idx] = cofactor_val
+                                        
+                                        a_str = format_val_str(a)
+                                        b_str = format_val_str(b)
+                                        c_str = format_val_str(c)
+                                        d_str = format_val_str(d)
+                                        prod1_str = format_val_str(prod1)
+                                        prod2_str = format_val_str(prod2)
+                                        cofactor_str = format_val_str(cofactor_val)
+                                        
+                                        cofactor_expr = (
+                                            f"C_{{{row_idx+1}{col_idx+1}}} = {sign_str}"
+                                            f"\\begin{{vmatrix}} {a_str} & {b_str} \\\\ {c_str} & {d_str} \\end{{vmatrix}} = "
+                                            f"{sign_str}({prod1_str} - ({prod2_str})) = {cofactor_str}"
+                                        )
+                                        row_cofactors_latex.append(cofactor_expr)
+                                    
+                                    st.latex(", \\quad ".join(row_cofactors_latex))
+                                
+                                st.markdown("Cofactor matrix $C$:")
+                                st.latex(f"C = {format_matrix_latex(cofactors)}")
+                                
                                 adj = cofactors.T
-                                st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
+                                st.markdown("**3. Transpose cofactor matrix to find $\\text{adj}(A) = C^T$:**")
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
-                                inv_A = adj / det_A
-                                st.markdown("**3. Inverse Matrix:**")
-                                st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
+                                
+                                st.markdown("**4. Calculate $A^{-1} = \\frac{1}{\\det(A)} \\text{adj}(A)$:**")
+                                if det_A.is_integer():
+                                    det_denom = int(det_A)
+                                    st.latex(f"A^{{-1}} = \\frac{{1}}{{{det_denom}}} {format_matrix_latex(adj)}")
+                                else:
+                                    inv_A = adj / det_A
+                                    st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                                 
                         else:  # Gauss-Jordan Elimination
                             st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
@@ -1292,4 +1343,4 @@ def render():
 
 # Ensure the module can be loaded correctly by the main app
 if __name__ == "__main__":
-  render()
+    render()
