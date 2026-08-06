@@ -1,4 +1,4 @@
-# Trying No. 2 to have a STABLE Version of  Manual Gauss-Jordan Inverse Matrix  Practice
+# Trying No. 3 to have a STABLE Version of  Manual Gauss-Jordan Inverse Matrix  Practice
 import streamlit as st
 import numpy as np
 import re
@@ -966,12 +966,11 @@ def render():
                 if "manual_inv_curr" not in st.session_state:
                     st.session_state.manual_inv_curr = None
 
-                c_pload1, c_pload2 = st.columns(2)
+                c_pload1, c_pload2, c_pload3 = st.columns([2, 2, 1])
                 with c_pload1:
-                    load_manual_btn = st.button("Load Matrix Into Manual Inverse Workspace", type="primary", key="load_manual_inv", use_container_width=True)
+                    load_manual_btn = st.button("Load Matrix", type="primary", key="load_manual_inv", use_container_width=True)
                 with c_pload2:
-                    reset_manual_btn = st.button("Reset Manual Inverse Workspace", key="reset_manual_inv", use_container_width=True)
-                if load_manual_btn:
+                    reset_manual_btn = st.button("Reset Workspace", key="reset_manual_inv", use_container_width=True)                if load_manual_btn:
                     if A.shape[0] != A.shape[1]:
                         st.error("Matrix must be square to find an inverse.")
                     else:
@@ -1004,11 +1003,11 @@ def render():
                     st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
                     inv_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_op_input")
                     
-                    mic1, mic2 = st.columns(2)
+                    mic1, mic2, mic3 = st.columns([2, 2, 2])
                     with mic1:
                         inv_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_exec", use_container_width=True)
                     with mic2:
-                        inv_undo_btn = st.button("Undo Last Step", key="manual_inv_undo", use_container_width=True)
+                        inv_undo_btn = st.button("Undo Step", key="manual_inv_undo", use_container_width=True)
                         
                     if inv_apply_btn and inv_op_input:
                         try:
@@ -1040,7 +1039,7 @@ def render():
                                 st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
                                 
                     st.markdown("---")
-                    if st.button("Check My Final Inverse Result", key="check_manual_inv_result", type="primary"):
+                    if st.button("Check Result", key="check_manual_inv_result", type="primary"):
                         current_right_block = st.session_state.manual_inv_curr[:, n_dim:]
                         try:
                             actual_inv = np.linalg.inv(A)
