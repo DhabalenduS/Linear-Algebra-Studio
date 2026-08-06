@@ -1,4 +1,4 @@
-# 1st try to implement solution by inverse method (Gauss-Elimination)
+# 2nd try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -318,11 +318,11 @@ def render():
     # --- TAB 1: SYSTEM OF LINEAR EQUATIONS ---
     elif selected_tab == "System of Linear Equations":
         st.markdown("#### System of Linear Equations Solver")
-        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, Solution using Matrix Inverse, or check system consistency and rank.")
+        st.markdown("Solve $AX = B$ using Gauss Elimination, LU Factorization, or check system consistency and rank.")
         
         method_choice = st.selectbox(
             "Select Solution Technique", 
-            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Solution using Matrix Inverse", "Rank & System Consistency"]
+            ["Gauss Elimination", "Doolittle's Method (LU)", "Crout's Method (LU)", "Rank & System Consistency"]
         )
         
         n_vars = st.number_input("Number of equations", min_value=1, max_value=20, value=3, step=1, key="sys_n")
@@ -722,72 +722,6 @@ def render():
                     st.markdown("##### Final Complete Solution Vector X:")
                     st.latex(r"X = " + format_matrix_latex(x.reshape(-1, 1)))
 
-        elif method_choice == "Solution using Matrix Inverse":
-            st.markdown("##### System Solution via Matrix Inverse Method ($X = A^{-1}B$)[cite: 3]")
-            st.markdown("Compute the solution by finding $A^{-1}$ and performing matrix multiplication with vector $B$[cite: 3].")
-            
-            inv_solve_mode = st.selectbox(
-                "Select Mode for Matrix Inverse System Solver",
-                ["Automated", "Manual"]
-            )
-            
-            A_mat_inv = np.array(A_rows, dtype=float)
-            b_vec_inv = np.array(b_vec, dtype=float)
-
-            if inv_solve_mode == "Automated":
-                if st.button("Run Automated Inverse System Solver", type="primary", key="run_inv_system_auto"):
-                    if A_mat_inv.shape[0] != A_mat_inv.shape[1]:
-                        st.error("Coefficient matrix A must be square.")
-                    else:
-                        det_val = np.linalg.det(A_mat_inv)
-                        if np.isclose(det_val, 0):
-                            st.warning("Matrix A is singular ($\det(A) = 0$). No unique inverse exists[cite: 3].")
-                        else:
-                            st.markdown("##### 1. System Formulation ($AX = B$)")
-                            col_fa, col_fb = st.columns(2)
-                            with col_fa:
-                                st.latex(f"A = {format_matrix_latex(A_mat_inv)}")
-                            with col_fb:
-                                st.latex(f"B = {format_matrix_latex(b_vec_inv.reshape(-1, 1))}")
-                            
-                            n = A_mat_inv.shape[0]
-                            cofactors = np.zeros((n, n))
-                            for i in range(n):
-                                for j in range(n):
-                                    submat = np.delete(np.delete(A_mat_inv, i, axis=0), j, axis=1)
-                                    cofactors[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
-                            adj_mat = cofactors.T
-                            inv_mat_val = adj_mat / det_val
-                            
-                            st.markdown(f"##### 2. Inverse Matrix Calculation ($A^{-1}$):")
-                            st.markdown(f"$$\\det(A) = {det_val:.4g}$$")
-                            st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat_val)}")
-                            
-                            st.markdown("##### 3. Compute Solution Vector ($X = A^{-1}B$)[cite: 3]:")
-                            sol_x = np.dot(inv_mat_val, b_vec_inv)
-                            st.latex(f"X = {format_matrix_latex(inv_mat_val)} \\cdot {format_matrix_latex(b_vec_inv.reshape(-1, 1))} = {format_matrix_latex(sol_x.reshape(-1, 1))}")
-                            st.success(f"Final Solution Vector X: {sol_x}")
-            else:
-                st.markdown("##### Manual Practice: Solve System Using Matrix Inverse")
-                st.markdown("Find $A^{-1}$ using your preferred method (Adjoint or Gauss-Jordan), then enter your final computed solution vector $X$ below to verify.")
-                
-                user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_sys_manual_input")
-                
-                if st.button("Verify My Solution Vector X", type="primary", key="verify_inv_sys_manual"):
-                    try:
-                        parsed_vals = [float(v) for v in user_sol_input.replace(',', ' ').split()]
-                        user_x_vec = np.array(parsed_vals, dtype=float)
-                        true_x = np.linalg.solve(A_mat_inv, b_vec_inv)
-                        
-                        if user_x_vec.shape == true_x.shape and np.allclose(user_x_vec, true_x, atol=1e-2):
-                            st.success("🎉 Correct! Your solution vector matches the expected analytical result!")
-                            st.latex(f"X = {format_matrix_latex(user_x_vec.reshape(-1, 1))}")
-                        else:
-                            st.error("❌ Your solution vector is incorrect. Please recheck your $A^{-1}$ calculation or matrix product $A^{-1}B$[cite: 3].")
-                            st.markdown("**Expected Correct Solution Vector:**")
-                            st.latex(f"X = {format_matrix_latex(true_x.reshape(-1, 1))}")
-                    except Exception as err:
-                        st.error(f"Error parsing solution vector input: {err}")
         else:
             calc_rank_clicked = st.button("Check Rank & Consistency", type="primary", key="calc_rank_sys")
 
@@ -924,7 +858,7 @@ def render():
         with c_m_inp:
             method_choice = st.selectbox(
                 "Select Method:",
-                options=["Adjoint Formula", "Gauss-Jordan Elimination"],
+                options=["Adjoint Formula", "Gauss-Jordan Elimination", "Solution using Matrix Inverse"],
                 key="inverse_method_dropdown",
                 label_visibility="collapsed"
             )
@@ -943,7 +877,72 @@ def render():
 
         st.markdown("---")
 
-        if mode_choice == "Automated":
+        if method_choice == "Solution using Matrix Inverse":
+            st.markdown("##### System Solution via Matrix Inverse Method ($X = A^{-1}B$)[cite: 3]")
+            st.markdown("Provide constant vector $B$ below to solve $AX = B$ using the inverse of matrix $A$[cite: 3].")
+            
+            b_inv_input = st.text_input("Enter Constant Vector B (space separated):", value="3 2 5", key="inv_tab_b_vec")
+            try:
+                b_vec_sys = np.array([float(val) for val in b_inv_input.replace(',', ' ').split()], dtype=float)
+            except:
+                b_vec_sys = np.array([3.0, 2.0, 5.0], dtype=float)
+
+            if mode_choice == "Automated":
+                if st.button("Run Automated Matrix Inverse System Solver", type="primary", key="run_matrix_inv_sys_auto"):
+                    if A.shape[0] != A.shape[1]:
+                        st.error("Matrix A must be square.")
+                    else:
+                        det_A = np.linalg.det(A)
+                        if np.isclose(det_A, 0):
+                            st.warning("Matrix A is singular ($\det(A) = 0$). No unique inverse exists[cite: 3].")
+                        else:
+                            st.markdown("##### 1. System Formulation ($AX = B$)")
+                            col_fa, col_fb = st.columns(2)
+                            with col_fa:
+                                st.latex(f"A = {format_matrix_latex(A)}")
+                            with col_fb:
+                                st.latex(f"B = {format_matrix_latex(b_vec_sys.reshape(-1, 1))}")
+                            
+                            n = A.shape[0]
+                            cofactors = np.zeros((n, n))
+                            for i in range(n):
+                                for j in range(n):
+                                    submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                    cofactors[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
+                            adj_mat = cofactors.T
+                            inv_mat_val = adj_mat / det_A
+                            
+                            st.markdown(f"##### 2. Inverse Matrix Calculation ($A^{-1}$):")
+                            st.markdown(f"$$\\det(A) = {det_A:.4g}$$")
+                            st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat_val)}")
+                            
+                            st.markdown("##### 3. Compute Solution Vector ($X = A^{-1}B$)[cite: 3]:")
+                            sol_x = np.dot(inv_mat_val, b_vec_sys)
+                            st.latex(f"X = {format_matrix_latex(inv_mat_val)} \\cdot {format_matrix_latex(b_vec_sys.reshape(-1, 1))} = {format_matrix_latex(sol_x.reshape(-1, 1))}")
+                            st.success(f"Final Solution Vector X: {sol_x}")
+            else:
+                st.markdown("##### Manual Practice: Solve System Using Matrix Inverse")
+                st.markdown("Calculate $A^{-1}$ and find $X = A^{-1}B$[cite: 3], then enter your final solution vector $X$ below to verify.")
+                
+                user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input")
+                
+                if st.button("Verify My Solution Vector X", type="primary", key="verify_matrix_inv_sys_manual"):
+                    try:
+                        parsed_vals = [float(v) for v in user_sol_input.replace(',', ' ').split()]
+                        user_x_vec = np.array(parsed_vals, dtype=float)
+                        true_x = np.linalg.solve(A, b_vec_sys)
+                        
+                        if user_x_vec.shape == true_x.shape and np.allclose(user_x_vec, true_x, atol=1e-2):
+                            st.success("🎉 Correct! Your solution vector matches the expected analytical result!")
+                            st.latex(f"X = {format_matrix_latex(user_x_vec.reshape(-1, 1))}")
+                        else:
+                            st.error("❌ Your solution vector is incorrect. Please recheck your $A^{-1}$ calculation or matrix product $A^{-1}B$[cite: 3].")
+                            st.markdown("**Expected Correct Solution Vector:**")
+                            st.latex(f"X = {format_matrix_latex(true_x.reshape(-1, 1))}")
+                    except Exception as err:
+                        st.error(f"Error parsing solution vector input: {err}")
+
+        elif mode_choice == "Automated":
             compute_clicked = st.button("Compute Inverse", type="primary", key="inverse_compute_btn")
             if compute_clicked:
                 st.subheader(f"Automated Solution via {method_choice}")
