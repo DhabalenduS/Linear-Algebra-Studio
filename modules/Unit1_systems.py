@@ -1,4 +1,4 @@
-# 2nd try to implement solution by inverse method (Gauss-Elimination)
+# 3rd try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -878,7 +878,7 @@ def render():
         st.markdown("---")
 
         if method_choice == "Solution using Matrix Inverse":
-            st.markdown("##### System Solution via Matrix Inverse Method ($X = A^{-1}B$)[cite: 3]")
+            st.markdown("##### System Solution via Matrix Inverse Method ($X = A^{-1}B$)")
             st.markdown("Provide constant vector $B$ below to solve $AX = B$ using the inverse of matrix $A$[cite: 3].")
             
             b_inv_input = st.text_input("Enter Constant Vector B (space separated):", value="3 2 5", key="inv_tab_b_vec")
