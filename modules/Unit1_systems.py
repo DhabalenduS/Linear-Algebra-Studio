@@ -1,4 +1,4 @@
-# Trying to have a STABLE Version of  Manual Gauss-Jordan Inverse Matrix  Practice
+# Trying No. 1 to have a STABLE Version of  Manual Gauss-Jordan Inverse Matrix  Practice
 import streamlit as st
 import numpy as np
 import re
@@ -968,22 +968,26 @@ def render():
 
                     c_pload1, c_pload2 = st.columns(2)
                     with c_pload1:
-                        if st.button("Load Matrix Into Manual Inverse Workspace", type="primary", key="load_manual_inv"):
-                            if A.shape[0] != A.shape[1]:
-                                st.error("Matrix must be square to find an inverse.")
-                            else:
-                                n_dim = A.shape[0]
-                                aug_inv = np.column_stack((A, np.eye(n_dim)))
-                                st.session_state.manual_inv_orig = aug_inv.copy()
-                                st.session_state.manual_inv_curr = aug_inv.copy()
-                                st.session_state.manual_inv_history = []
-                                st.rerun()
+                        load_manual_btn = st.button("Load Matrix Into Manual Inverse Workspace", type="primary", key="load_manual_inv")
                     with c_pload2:
-                        if st.button("Reset Manual Inverse Workspace", key="reset_manual_inv"):
-                            st.session_state.manual_inv_orig = None
-                            st.session_state.manual_inv_curr = None
+                        reset_manual_btn = st.button("Reset Manual Inverse Workspace", key="reset_manual_inv")
+
+                    if load_manual_btn:
+                        if A.shape[0] != A.shape[1]:
+                            st.error("Matrix must be square to find an inverse.")
+                        else:
+                            n_dim = A.shape[0]
+                            aug_inv = np.column_stack((A, np.eye(n_dim)))
+                            st.session_state.manual_inv_orig = aug_inv.copy()
+                            st.session_state.manual_inv_curr = aug_inv.copy()
                             st.session_state.manual_inv_history = []
                             st.rerun()
+
+                    if reset_manual_btn:
+                        st.session_state.manual_inv_orig = None
+                        st.session_state.manual_inv_curr = None
+                        st.session_state.manual_inv_history = []
+                        st.rerun()
 
                     if st.session_state.manual_inv_curr is not None:
                         n_dim = A.shape[0]
