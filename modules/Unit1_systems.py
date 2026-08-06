@@ -1,10 +1,28 @@
-# 8th try to implement solution by inverse method (Gauss-Elimination)
+# 9th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
 from fractions import Fraction
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
+def render():
+  """Renders the Unit 1 Systems of Linear Equations module."""
+  st.title("Unit 1: Systems of Linear Equations")
+  st.write(
+      "Welcome to the interactive workspace for systems of linear equations!"
+  )
+
+  # Add your specific module content, UI components, and logic here
+  st.subheader("Interactive Workspace")
+  st.info(
+      "This module is currently active and ready for your implementation."
+  )
+
+
+# Ensure the module can be loaded correctly by the main app
+if __name__ == "__main__":
+  render()
 
 # Optional PDF generator support
 try:
