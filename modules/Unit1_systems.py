@@ -1,4 +1,4 @@
-# 4th try to implement solution by inverse method (Gauss-Elimination)
+# 5th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -827,7 +827,6 @@ def render():
                         st.error(f"Could not generate plot: {err}")
 
     # --- TAB 2: INVERSE OF A MATRIX ---
-    # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
@@ -944,7 +943,6 @@ def render():
                         st.error(f"Error parsing solution vector input: {err}")
 
         elif mode_choice == "Automated":
-            # ... [Automated handlers for Adjoint Formula / Gauss-Jordan Inverse remain here] ...
             compute_clicked = st.button("Compute Inverse", type="primary", key="inverse_compute_btn")
             if compute_clicked:
                 st.subheader(f"Automated Solution via {method_choice}")
