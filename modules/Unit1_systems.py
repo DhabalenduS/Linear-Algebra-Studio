@@ -1,4 +1,4 @@
-# 10th try to implement solution by inverse method (Gauss-Elimination)
+# 11th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -1092,7 +1092,7 @@ def render():
                                 if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
                                     curr_aug[i] = curr_aug[i] / pivot
                                     # FIXED ESCAPED BRACES BELOW:
-                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}$)")
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{{ {i+1} }}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{{ {i+1} }}}}$)")
                                     st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                     step_num += 1
                                 
@@ -1100,7 +1100,8 @@ def render():
                                     if j != i and not np.isclose(curr_aug[j, i], 0):
                                         factor = curr_aug[j, i]
                                         curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
-                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}$)")
+                                        # FIXED ESCAPED BRACES BELOW:
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{{ {j+1} }}}} \\to R_{{{{ {j+1} }}}} - ({factor:.2g})R_{{{{ {i+1} }}}}$)")
                                         st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                         step_num += 1
                                         
