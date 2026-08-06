@@ -1,4 +1,4 @@
-# 5th try to implement solution by inverse method (Gauss-Elimination)
+# 6th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -924,11 +924,18 @@ def render():
                 st.markdown("##### Manual Practice: Solve System Using Matrix Inverse")
                 st.markdown("Calculate $A^{-1}$ on your own, then compute $X = A^{-1}B$ using paper and pen. Enter your final solution vector $X$ below to verify.")
                 
-                user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input")
+                user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input", height=100)
                 
                 if st.button("Verify My Solution Vector X", type="primary", key="verify_matrix_inv_sys_manual"):
                     try:
-                        parsed_vals = [float(v) for v in user_sol_input.replace(',', ' ').split()]
+                        # Improved parsing to handle both spaces and newlines cleanly
+                        cleaned_lines = user_sol_input.strip().split("\n")
+                        parsed_vals = []
+                        for line in cleaned_lines:
+                            for token in line.replace(',', ' ').split():
+                                if token.strip():
+                                    parsed_vals.append(float(token.strip()))
+                                    
                         user_x_vec = np.array(parsed_vals, dtype=float)
                         true_x = np.linalg.solve(A, b_vec_sys)
                         
