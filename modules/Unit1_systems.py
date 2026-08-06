@@ -1,4 +1,4 @@
-# 3rd try to implement solution by inverse method (Gauss-Elimination)
+# 4th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -827,6 +827,7 @@ def render():
                         st.error(f"Could not generate plot: {err}")
 
     # --- TAB 2: INVERSE OF A MATRIX ---
+    # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
@@ -879,7 +880,7 @@ def render():
 
         if method_choice == "Solution using Matrix Inverse":
             st.markdown("##### System Solution via Matrix Inverse Method ($X = A^{-1}B$)")
-            st.markdown("Provide constant vector $B$ below to solve $AX = B$ using the inverse of matrix $A$[cite: 3].")
+            st.markdown("Provide constant vector $B$ below to solve $AX = B$ using the inverse of matrix $A$.")
             
             b_inv_input = st.text_input("Enter Constant Vector B (space separated):", value="3 2 5", key="inv_tab_b_vec")
             try:
@@ -894,7 +895,7 @@ def render():
                     else:
                         det_A = np.linalg.det(A)
                         if np.isclose(det_A, 0):
-                            st.warning("Matrix A is singular ($\det(A) = 0$). No unique inverse exists[cite: 3].")
+                            st.warning("Matrix A is singular ($\det(A) = 0$). No unique inverse exists.")
                         else:
                             st.markdown("##### 1. System Formulation ($AX = B$)")
                             col_fa, col_fb = st.columns(2)
@@ -916,13 +917,13 @@ def render():
                             st.markdown(f"$$\\det(A) = {det_A:.4g}$$")
                             st.latex(f"A^{{-1}} = {format_matrix_latex(inv_mat_val)}")
                             
-                            st.markdown("##### 3. Compute Solution Vector ($X = A^{-1}B$)[cite: 3]:")
+                            st.markdown("##### 3. Compute Solution Vector ($X = A^{-1}B$):")
                             sol_x = np.dot(inv_mat_val, b_vec_sys)
                             st.latex(f"X = {format_matrix_latex(inv_mat_val)} \\cdot {format_matrix_latex(b_vec_sys.reshape(-1, 1))} = {format_matrix_latex(sol_x.reshape(-1, 1))}")
                             st.success(f"Final Solution Vector X: {sol_x}")
             else:
                 st.markdown("##### Manual Practice: Solve System Using Matrix Inverse")
-                st.markdown("Calculate $A^{-1}$ and find $X = A^{-1}B$[cite: 3], then enter your final solution vector $X$ below to verify.")
+                st.markdown("Calculate $A^{-1}$ on your own, then compute $X = A^{-1}B$ using paper and pen. Enter your final solution vector $X$ below to verify.")
                 
                 user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input")
                 
@@ -936,13 +937,14 @@ def render():
                             st.success("🎉 Correct! Your solution vector matches the expected analytical result!")
                             st.latex(f"X = {format_matrix_latex(user_x_vec.reshape(-1, 1))}")
                         else:
-                            st.error("❌ Your solution vector is incorrect. Please recheck your $A^{-1}$ calculation or matrix product $A^{-1}B$[cite: 3].")
+                            st.error("❌ Your solution vector is incorrect. Please recheck your $A^{-1}$ calculation or matrix product $A^{-1}B$.")
                             st.markdown("**Expected Correct Solution Vector:**")
                             st.latex(f"X = {format_matrix_latex(true_x.reshape(-1, 1))}")
                     except Exception as err:
                         st.error(f"Error parsing solution vector input: {err}")
 
         elif mode_choice == "Automated":
+            # ... [Automated handlers for Adjoint Formula / Gauss-Jordan Inverse remain here] ...
             compute_clicked = st.button("Compute Inverse", type="primary", key="inverse_compute_btn")
             if compute_clicked:
                 st.subheader(f"Automated Solution via {method_choice}")
