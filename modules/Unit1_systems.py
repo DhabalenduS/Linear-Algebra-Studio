@@ -1,5 +1,4 @@
-# In the previous committed,we have stable for displaying  all calculations incuding cofactors in automated Adjoint Method
-# 1st Try to improve Manual Adjoint Method for inverse
+# 2nd Try to improve Manual Adjoint Method for inverse
 import streamlit as st
 import numpy as np
 import re
@@ -1315,14 +1314,17 @@ def render():
                 else:
                     st.caption("Click the button above to load your matrix's augmented $[A \mid I]$ state into the manual practice workspace.")
             
+            # Updated section in the "Inverse of a Matrix" tab under Manual Mode -> Adjoint Formula
             elif method_choice == "Adjoint Formula":
                 st.markdown("##### Structured Milestone Practice Mode (Adjoint Formula)")
-                st.info("Progress through the milestones below to verify your calculations for Determinant, Cofactor Matrix, and Final Inverse Matrix step-by-step.")
+                st.info("Progress through the milestones below to verify your calculations for Determinant, Cofactor Matrix, Adjugate Matrix, and Final Inverse Matrix step-by-step.")
 
                 if "adj_det_verified" not in st.session_state:
                     st.session_state.adj_det_verified = False
                 if "adj_cofactor_verified" not in st.session_state:
                     st.session_state.adj_cofactor_verified = False
+                if "adj_matrix_verified" not in st.session_state:
+                    st.session_state.adj_matrix_verified = False
 
                 st.markdown("**Target Matrix A:**")
                 st.latex(format_matrix_latex(A))
@@ -1367,7 +1369,6 @@ def render():
                                 user_c_list.append(row_nums)
                             user_C_mat = np.array(user_c_list, dtype=float)
 
-                            # Calculate actual cofactor matrix
                             actual_C = np.zeros((n_dim, n_dim), dtype=float)
                             for i in range(n_dim):
                                 for j in range(n_dim):
@@ -1382,10 +1383,44 @@ def render():
                         except Exception as err:
                             st.error(f"Error parsing cofactor matrix input: {err}")
 
-                # Milestone 3: Final Inverse Matrix
+                # Milestone 3: Adjugate Matrix (adj A = C^T)
                 if st.session_state.adj_cofactor_verified:
                     st.markdown("---")
-                    st.markdown("### Milestone 3: Final Inverse Matrix Verification ($A^{-1}$)")
+                    st.markdown("### Milestone 3: Enter Adjugate Matrix $\\text{adj}(A)$ (Transpose of Cofactor Matrix)")
+                    st.markdown("Provide comma or space-separated values for each row of $\\text{adj}(A) = C^T$:")
+
+                    adj_row_inputs = []
+                    for ri in range(n_dim):
+                        adj_r_val = st.text_input(f"Adjugate Row {ri+1}", value=default_rows_hint[ri], key=f"manual_adj_mat_row_{ri}")
+                        adj_row_inputs.append(adj_r_val)
+
+                    if st.button("Verify Adjugate Matrix", key="verify_adj_mat_btn"):
+                        try:
+                            user_adj_list = []
+                            for r_str in adj_row_inputs:
+                                row_nums = [float(x.strip()) for x in r_str.replace(',', ' ').split() if x.strip()]
+                                user_adj_list.append(row_nums)
+                            user_adj_mat = np.array(user_adj_list, dtype=float)
+
+                            actual_C = np.zeros((n_dim, n_dim), dtype=float)
+                            for i in range(n_dim):
+                                for j in range(n_dim):
+                                    submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                    actual_C[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
+                            actual_adj = actual_C.T
+
+                            if user_adj_mat.shape == actual_adj.shape and np.allclose(user_adj_mat, actual_adj, atol=1e-2):
+                                st.success("Great job! Your adjugate matrix (transpose of the cofactor matrix) is completely correct.")
+                                st.session_state.adj_matrix_verified = True
+                            else:
+                                st.error("The adjugate matrix values are incorrect. Ensure you have properly transposed the cofactor matrix rows into columns.")
+                        except Exception as err:
+                            st.error(f"Error parsing adjugate matrix input: {err}")
+
+                # Milestone 4: Final Inverse Matrix
+                if st.session_state.adj_matrix_verified:
+                    st.markdown("---")
+                    st.markdown("### Milestone 4: Final Inverse Matrix Verification ($A^{-1}$)")
                     st.markdown("Enter your final calculated inverse matrix row-by-row (fractions or decimals allowed):")
 
                     inv_row_inputs = []
@@ -1410,15 +1445,14 @@ def render():
                             actual_inv = actual_C.T / det_A
 
                             if user_Inv_mat.shape == actual_inv.shape and np.allclose(user_Inv_mat, actual_inv, atol=1e-2):
-                                st.success("🎉 Outstanding work! You have successfully completed the Adjoint Formula manual practice workflow correctly!")
+                                st.success("🎉 Outstanding work! You have successfully completed the Adjoint Formula manual practice workflow correctly through all milestones!")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(user_Inv_mat)}")
                             else:
-                                st.error("❌ The final inverse matrix values are incorrect. Verify your transposition (adjugate) and scaling by $1/\\det(A)$.")
+                                st.error("❌ The final inverse matrix values are incorrect. Verify your scaling by $1/\\det(A)$.")
                                 st.markdown("**Expected Correct Inverse Matrix:**")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
                         except Exception as err:
                             st.error(f"Error parsing inverse matrix entries: {err}")
-
             else:
                 st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
                 
