@@ -1,4 +1,4 @@
-# 16th try to implement solution by inverse method (Gauss-Elimination)
+# 17th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -930,6 +930,8 @@ def render():
                     st.session_state.manual_inv_sys_orig = None
                 if "manual_inv_sys_curr" not in st.session_state:
                     st.session_state.manual_inv_sys_curr = None
+                if "manual_inv_sys_stopped" not in st.session_state:
+                    st.session_state.manual_inv_sys_stopped = False
 
                 c_pload1, c_pload2 = st.columns(2)
                 with c_pload1:
@@ -946,12 +948,14 @@ def render():
                         st.session_state.manual_inv_sys_orig = aug_inv.copy()
                         st.session_state.manual_inv_sys_curr = aug_inv.copy()
                         st.session_state.manual_inv_sys_history = []
+                        st.session_state.manual_inv_sys_stopped = False
                         st.rerun()
 
                 if reset_manual_sys_btn:
                     st.session_state.manual_inv_sys_orig = None
                     st.session_state.manual_inv_sys_curr = None
                     st.session_state.manual_inv_sys_history = []
+                    st.session_state.manual_inv_sys_stopped = False
                     st.rerun()
 
                 if st.session_state.manual_inv_sys_curr is not None:
@@ -966,7 +970,6 @@ def render():
                         st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_sys_curr, n_div=n_dim))
                     st.markdown("---")
 
-                    # UPDATED: Renamed label with instruction and string options handling row entry or Stop
                     user_operation_input = st.text_input(
                         "Row Operation/Stop (enter space separated row entry or Stop for final solution)",
                         placeholder="e.g., R3 -> R3 - R1 or Stop",
@@ -982,15 +985,9 @@ def render():
                     if inv_sys_submit_btn and user_operation_input:
                         cleaned_op = user_operation_input.strip()
                         if cleaned_op.lower() == "stop":
-                            # Immediately display solution X = A^{-1}B = Solution vector, keeping all row operation steps
-                            st.markdown("##### 📊 Solution Display ($X = A^{-1}B$)")
-                            try:
-                                actual_inv = np.linalg.inv(A)
-                                sol_x = np.dot(actual_inv, b_vec_sys)
-                                st.success("🛑 Stopped by user. Displaying final solution vector X:")
-                                st.latex(f"X = A^{{-1}}B = {format_matrix_latex(sol_x.reshape(-1, 1))}")
-                            except Exception as err:
-                                st.error(f"Could not compute solution: {err}")
+                            st.session_state.manual_inv_sys_stopped = True
+                            st.success("🛑 Stopped by user.")
+                            st.rerun()
                         else:
                             try:
                                 updated_inv = perform_row_operation(st.session_state.manual_inv_sys_curr, cleaned_op)
@@ -1013,6 +1010,7 @@ def render():
                         else:
                             st.warning("No operations to undo.")
 
+                    # Render Step-by-Step History FIRST, then render the Stop solution X if stopped
                     if st.session_state.manual_inv_sys_history:
                         st.markdown("---")
                         st.markdown("##### 📚 Manual Step-by-Step History")
@@ -1020,11 +1018,38 @@ def render():
                             with st.expander(f"Step {idx+1}: {item['operation']}"):
                                 st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
 
+                    if st.session_state.manual_inv_sys_stopped:
+                        st.markdown("---")
+                        st.markdown("##### 📊 Solution Display ($X = A^{-1}B$)")
+                        try:
+                            actual_inv = np.linalg.inv(A)
+                            sol_x = np.dot(actual_inv, b_vec_sys)
+                            st.latex(f"X = A^{{-1}}B = {format_matrix_latex(sol_x.reshape(-1, 1))}")
+                        except Exception as err:
+                            st.error(f"Could not compute solution: {err}")
+
+                # --- IMPROVEMENT: Automated display of X = A^{-1}B as soon as identity matrix is achieved on the left block ---
+                if st.session_state.manual_inv_sys_curr is not None:
+                    left_block = st.session_state.manual_inv_sys_curr[:, :n_dim]
+                    if np.allclose(left_block, np.eye(n_dim), atol=1e-2):
+                        st.markdown("---")
+                        st.success("🎉 Left block has successfully reached the Identity Matrix! $A^{-1}$ has been completely derived on the right block.")
+                        try:
+                            derived_inv = st.session_state.manual_inv_sys_curr[:, n_dim:]
+                            auto_sol_x = np.dot(derived_inv, b_vec_sys)
+                            st.markdown("##### 📊 Automatically Computed Solution Vector ($X = A^{-1}B$):")
+                            st.latex(f"X = A^{{-1}}B = {format_matrix_latex(derived_inv)} \\cdot {format_matrix_latex(b_vec_sys.reshape(-1, 1))} = {format_matrix_latex(auto_sol_x.reshape(-1, 1))}")
+                        except Exception as e:
+                            st.error(f"Error computing final solution vector: {e}")
+
                 st.markdown("---")
                 st.markdown("##### 📥 Enter Final Solution Vector $X$ for Verification")
                 user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input", height=100)
                 
                 if st.button("Verify My Solution Vector X", type="primary", key="verify_matrix_inv_sys_manual"):
+                    st.session_state.verify_matrix_inv_sys_triggered = True
+
+                if st.session_state.get("verify_matrix_inv_sys_triggered", False):
                     try:
                         cleaned_lines = user_sol_input.strip().split("\n")
                         parsed_vals = []
@@ -1169,7 +1194,6 @@ def render():
                         st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_curr, n_div=n_dim))
                     st.markdown("---")
 
-                    # UPDATED: Renamed label with instruction and string options handling row entry or Stop for inverse workspace too
                     user_inv_operation_input = st.text_input(
                         "Row Operation/Stop (enter space separated row entry or Stop for final solution)",
                         placeholder="e.g., R3 -> R3 - R1 or Stop",
@@ -1223,6 +1247,9 @@ def render():
                                 
                     st.markdown("---")
                     if st.button("Check My Final Inverse Result", key="check_manual_inv_result", type="primary"):
+                        st.session_state.check_manual_inv_triggered = True
+
+                    if st.session_state.get("check_manual_inv_triggered", False):
                         current_right_block = st.session_state.manual_inv_curr[:, n_dim:]
                         try:
                             actual_inv = np.linalg.inv(A)
@@ -1243,6 +1270,9 @@ def render():
                 verify_clicked = st.button("Verify My Inverse Matrix", key="verify_manual_inverse", type="primary")
 
                 if verify_clicked:
+                    st.session_state.verify_manual_inverse_triggered = True
+
+                if st.session_state.get("verify_manual_inverse_triggered", False):
                     try:
                         rows_ans = user_ans_str.strip().split("\n")
                         user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
