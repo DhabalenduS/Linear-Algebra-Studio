@@ -1,4 +1,4 @@
-# 7th try to implement solution by inverse method (Gauss-Elimination)
+# 8th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -921,14 +921,96 @@ def render():
                             st.latex(f"X = {format_matrix_latex(inv_mat_val)} \\cdot {format_matrix_latex(b_vec_sys.reshape(-1, 1))} = {format_matrix_latex(sol_x.reshape(-1, 1))}")
                             st.success(f"Final Solution Vector X: {sol_x}")
             else:
-                st.markdown("##### Manual Practice: Solve System Using Matrix Inverse")
-                st.markdown("Calculate $A^{-1}$ on your own, then compute $X = A^{-1}B$ using paper and pen. Enter your final solution vector $X$ below to verify.")
+                st.markdown("##### Manual Practice: Solve System Using Matrix Inverse via Gauss-Jordan Elimination")
+                st.markdown("Perform elementary row-operations step-by-step on the augmented matrix $[A \\mid I]$ to find $A^{-1}$, then compute $X = A^{-1}B$ using paper and pen.")
+
+                if "manual_inv_sys_history" not in st.session_state:
+                    st.session_state.manual_inv_sys_history = []
+                if "manual_inv_sys_orig" not in st.session_state:
+                    st.session_state.manual_inv_sys_orig = None
+                if "manual_inv_sys_curr" not in st.session_state:
+                    st.session_state.manual_inv_sys_curr = None
+
+                c_pload1, c_pload2 = st.columns(2)
+                with c_pload1:
+                    load_manual_sys_btn = st.button("Load Matrix Into Manual Workspace", type="primary", key="load_manual_inv_sys", use_container_width=True)
+                with c_pload2:
+                    reset_manual_sys_btn = st.button("Reset Manual Workspace", key="reset_manual_inv_sys", use_container_width=True)
                 
+                if load_manual_sys_btn:
+                    if A.shape[0] != A.shape[1]:
+                        st.error("Matrix must be square to find an inverse.")
+                    else:
+                        n_dim = A.shape[0]
+                        aug_inv = np.column_stack((A, np.eye(n_dim)))
+                        st.session_state.manual_inv_sys_orig = aug_inv.copy()
+                        st.session_state.manual_inv_sys_curr = aug_inv.copy()
+                        st.session_state.manual_inv_sys_history = []
+                        st.rerun()
+
+                if reset_manual_sys_btn:
+                    st.session_state.manual_inv_sys_orig = None
+                    st.session_state.manual_inv_sys_curr = None
+                    st.session_state.manual_inv_sys_history = []
+                    st.rerun()
+
+                if st.session_state.manual_inv_sys_curr is not None:
+                    n_dim = A.shape[0]
+                    st.markdown("---")
+                    mi_col1, mi_col2 = st.columns(2)
+                    with mi_col1:
+                        st.markdown("##### 📌 Initial Augmented Matrix $[A \\mid I]$")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_sys_orig, n_div=n_dim))
+                    with mi_col2:
+                        st.markdown("##### 🔄 Current Augmented Matrix State")
+                        st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_sys_curr, n_div=n_dim))
+                    st.markdown("---")
+
+                    st.markdown("##### 🛠️ Apply Row Operation")
+                    st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
+                    inv_sys_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_sys_op_input")
+                    
+                    mic1, mic2 = st.columns(2)
+                    with mic1:
+                        inv_sys_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_sys_exec", use_container_width=True)
+                    with mic2:
+                        inv_sys_undo_btn = st.button("Undo Last Step", key="manual_inv_sys_undo", use_container_width=True)
+                        
+                    if inv_sys_apply_btn and inv_sys_op_input:
+                        try:
+                            updated_inv = perform_row_operation(st.session_state.manual_inv_sys_curr, inv_sys_op_input)
+                            st.session_state.manual_inv_sys_history.append({"operation": inv_sys_op_input, "matrix": updated_inv.copy()})
+                            st.session_state.manual_inv_sys_curr = updated_inv
+                            st.success(f"Successfully applied: {inv_sys_op_input}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                            
+                    if inv_sys_undo_btn:
+                        if st.session_state.manual_inv_sys_history:
+                            st.session_state.manual_inv_sys_history.pop()
+                            if st.session_state.manual_inv_sys_history:
+                                st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_inv_sys_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_inv_sys_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
+
+                st.markdown("---")
+                st.markdown("##### 📥 Enter Final Solution Vector $X$ for Verification")
                 user_sol_input = st.text_area("Enter your solution vector values (space or newline separated):", value="4\n2\n-1", key="inv_tab_manual_sol_input", height=100)
                 
                 if st.button("Verify My Solution Vector X", type="primary", key="verify_matrix_inv_sys_manual"):
                     try:
-                        # Improved parsing to handle both spaces and newlines cleanly
                         cleaned_lines = user_sol_input.strip().split("\n")
                         parsed_vals = []
                         for line in cleaned_lines:
@@ -1009,7 +1091,7 @@ def render():
                                             break
                                 if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
                                     curr_aug[i] = curr_aug[i] / pivot
-                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}$)")
                                     st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                     step_num += 1
                                 
@@ -1017,7 +1099,7 @@ def render():
                                     if j != i and not np.isclose(curr_aug[j, i], 0):
                                         factor = curr_aug[j, i]
                                         curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
-                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}$)")
                                         st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                         step_num += 1
                                         
