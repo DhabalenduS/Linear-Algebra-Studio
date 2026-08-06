@@ -1,4 +1,4 @@
-# 14th try to implement solution by inverse method (Gauss-Elimination)
+# 16th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
@@ -966,63 +966,59 @@ def render():
                         st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_sys_curr, n_div=n_dim))
                     st.markdown("---")
 
-                    # ADDED: Two dropdown menu: (i) Row operation (ii) Stop and Solution
-                    select_operation_mode = st.selectbox(
-                        "Select Operation",
-                        options=["(i) Row Operation", "(ii) Stop and Solution"],
-                        key="inv_sys_select_operation_mode"
+                    # UPDATED: Renamed label with instruction and string options handling row entry or Stop
+                    user_operation_input = st.text_input(
+                        "Row Operation/Stop (enter space separated row entry or Stop for final solution)",
+                        placeholder="e.g., R3 -> R3 - R1 or Stop",
+                        key="inv_sys_row_operation_or_stop"
                     )
 
-                    if select_operation_mode == "(i) Row Operation":
-                        st.markdown("##### 🛠️ Apply Row Operation")
-                        st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
-                        inv_sys_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_sys_op_input")
+                    mic1, mic2 = st.columns(2)
+                    with mic1:
+                        inv_sys_submit_btn = st.button("Submit Operation / Stop", type="primary", key="manual_inv_sys_exec", use_container_width=True)
+                    with mic2:
+                        inv_sys_undo_btn = st.button("Undo Last Step", key="manual_inv_sys_undo", use_container_width=True)
                         
-                        mic1, mic2 = st.columns(2)
-                        with mic1:
-                            inv_sys_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_sys_exec", use_container_width=True)
-                        with mic2:
-                            inv_sys_undo_btn = st.button("Undo Last Step", key="manual_inv_sys_undo", use_container_width=True)
-                            
-                        if inv_sys_apply_btn and inv_sys_op_input:
+                    if inv_sys_submit_btn and user_operation_input:
+                        cleaned_op = user_operation_input.strip()
+                        if cleaned_op.lower() == "stop":
+                            # Immediately display solution X = A^{-1}B = Solution vector, keeping all row operation steps
+                            st.markdown("##### 📊 Solution Display ($X = A^{-1}B$)")
                             try:
-                                updated_inv = perform_row_operation(st.session_state.manual_inv_sys_curr, inv_sys_op_input)
-                                st.session_state.manual_inv_sys_history.append({"operation": inv_sys_op_input, "matrix": updated_inv.copy()})
+                                actual_inv = np.linalg.inv(A)
+                                sol_x = np.dot(actual_inv, b_vec_sys)
+                                st.success("🛑 Stopped by user. Displaying final solution vector X:")
+                                st.latex(f"X = A^{{-1}}B = {format_matrix_latex(sol_x.reshape(-1, 1))}")
+                            except Exception as err:
+                                st.error(f"Could not compute solution: {err}")
+                        else:
+                            try:
+                                updated_inv = perform_row_operation(st.session_state.manual_inv_sys_curr, cleaned_op)
+                                st.session_state.manual_inv_sys_history.append({"operation": cleaned_op, "matrix": updated_inv.copy()})
                                 st.session_state.manual_inv_sys_curr = updated_inv
-                                st.success(f"Successfully applied: {inv_sys_op_input}")
+                                st.success(f"Successfully applied: {cleaned_op}")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error: {e}")
-                                
-                        if inv_sys_undo_btn:
-                            if st.session_state.manual_inv_sys_history:
-                                st.session_state.manual_inv_sys_history.pop()
-                                if st.session_state.manual_inv_sys_history:
-                                    st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_history[-1]["matrix"].copy()
-                                else:
-                                    st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_orig.copy()
-                                st.info("Reverted last operation.")
-                                st.rerun()
-                            else:
-                                st.warning("No operations to undo.")
-
+                            
+                    if inv_sys_undo_btn:
                         if st.session_state.manual_inv_sys_history:
-                            st.markdown("---")
-                            st.markdown("##### 📚 Manual Step-by-Step History")
-                            for idx, item in enumerate(st.session_state.manual_inv_sys_history):
-                                with st.expander(f"Step {idx+1}: {item['operation']}"):
-                                    st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
-                    else:
-                        # Display solution X = A^{-1}B = solution vector
-                        st.markdown("##### 📊 Stop and Solution ($X = A^{-1}B$)")
-                        try:
-                            actual_inv = np.linalg.inv(A)
-                            sol_x = np.dot(actual_inv, b_vec_sys)
-                            st.markdown("The computed solution vector using $X = A^{-1}B$ is:")
-                            st.latex(f"X = A^{{-1}}B = {format_matrix_latex(sol_x.reshape(-1, 1))}")
-                            st.success(f"Solution Vector X: {sol_x}")
-                        except Exception as err:
-                            st.error(f"Could not compute solution: {err}")
+                            st.session_state.manual_inv_sys_history.pop()
+                            if st.session_state.manual_inv_sys_history:
+                                st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_inv_sys_curr = st.session_state.manual_inv_sys_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_inv_sys_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_inv_sys_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
 
                 st.markdown("---")
                 st.markdown("##### 📥 Enter Final Solution Vector $X$ for Verification")
@@ -1173,60 +1169,57 @@ def render():
                         st.latex(format_augmented_matrix_latex(st.session_state.manual_inv_curr, n_div=n_dim))
                     st.markdown("---")
 
-                    # ADDED: Two dropdown menu for standard inverse manual workspace too, or renamed label as requested
-                    select_operation_mode_inv = st.selectbox(
-                        "Select Operation",
-                        options=["(i) Row Operation", "(ii) Stop and Solution"],
-                        key="inv_select_operation_mode_general"
+                    # UPDATED: Renamed label with instruction and string options handling row entry or Stop for inverse workspace too
+                    user_inv_operation_input = st.text_input(
+                        "Row Operation/Stop (enter space separated row entry or Stop for final solution)",
+                        placeholder="e.g., R3 -> R3 - R1 or Stop",
+                        key="general_inv_row_operation_or_stop"
                     )
 
-                    if select_operation_mode_inv == "(i) Row Operation":
-                        st.markdown("##### 🛠️ Apply Row Operation")
-                        st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
-                        inv_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_op_input")
+                    mic1, mic2 = st.columns(2)
+                    with mic1:
+                        inv_apply_btn = st.button("Submit Operation / Stop", type="primary", key="manual_inv_exec", use_container_width=True)
+                    with mic2:
+                        inv_undo_btn = st.button("Undo Last Step", key="manual_inv_undo", use_container_width=True)
                         
-                        mic1, mic2 = st.columns(2)
-                        with mic1:
-                            inv_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_exec", use_container_width=True)
-                        with mic2:
-                            inv_undo_btn = st.button("Undo Last Step", key="manual_inv_undo", use_container_width=True)
-                            
-                        if inv_apply_btn and inv_op_input:
+                    if inv_apply_btn and user_inv_operation_input:
+                        cleaned_inv_op = user_inv_operation_input.strip()
+                        if cleaned_inv_op.lower() == "stop":
+                            st.markdown("##### 📊 Stop and Solution (Inverse Matrix $A^{-1}$)")
                             try:
-                                updated_inv = perform_row_operation(st.session_state.manual_inv_curr, inv_op_input)
-                                st.session_state.manual_inv_history.append({"operation": inv_op_input, "matrix": updated_inv.copy()})
+                                actual_inv = np.linalg.inv(A)
+                                st.success("🛑 Stopped by user. Displaying final inverse matrix:")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
+                            except Exception as err:
+                                st.error(f"Could not compute inverse: {err}")
+                        else:
+                            try:
+                                updated_inv = perform_row_operation(st.session_state.manual_inv_curr, cleaned_inv_op)
+                                st.session_state.manual_inv_history.append({"operation": cleaned_inv_op, "matrix": updated_inv.copy()})
                                 st.session_state.manual_inv_curr = updated_inv
-                                st.success(f"Successfully applied: {inv_op_input}")
+                                st.success(f"Successfully applied: {cleaned_inv_op}")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error: {e}")
                                 
-                        if inv_undo_btn:
-                            if st.session_state.manual_inv_history:
-                                st.session_state.manual_inv_history.pop()
-                                if st.session_state.manual_inv_history:
-                                    st.session_state.manual_inv_curr = st.session_state.manual_inv_history[-1]["matrix"].copy()
-                                else:
-                                    st.session_state.manual_inv_curr = st.session_state.manual_inv_orig.copy()
-                                st.info("Reverted last operation.")
-                                st.rerun()
-                            else:
-                                st.warning("No operations to undo.")
-
+                    if inv_undo_btn:
                         if st.session_state.manual_inv_history:
-                            st.markdown("---")
-                            st.markdown("##### 📚 Manual Step-by-Step History")
-                            for idx, item in enumerate(st.session_state.manual_inv_history):
-                                with st.expander(f"Step {idx+1}: {item['operation']}"):
-                                    st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
-                    else:
-                        st.markdown("##### 📊 Stop and Solution (Inverse Matrix $A^{-1}$)")
-                        try:
-                            actual_inv = np.linalg.inv(A)
-                            st.markdown("The computed inverse matrix $A^{-1}$ is:")
-                            st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
-                        except Exception as err:
-                            st.error(f"Could not compute inverse: {err}")
+                            st.session_state.manual_inv_history.pop()
+                            if st.session_state.manual_inv_history:
+                                st.session_state.manual_inv_curr = st.session_state.manual_inv_history[-1]["matrix"].copy()
+                            else:
+                                st.session_state.manual_inv_curr = st.session_state.manual_inv_orig.copy()
+                            st.info("Reverted last operation.")
+                            st.rerun()
+                        else:
+                            st.warning("No operations to undo.")
+
+                    if st.session_state.manual_inv_history:
+                        st.markdown("---")
+                        st.markdown("##### 📚 Manual Step-by-Step History")
+                        for idx, item in enumerate(st.session_state.manual_inv_history):
+                            with st.expander(f"Step {idx+1}: {item['operation']}"):
+                                st.latex(f"\\sim {format_augmented_matrix_latex(item['matrix'], n_div=n_dim)}")
                                 
                     st.markdown("---")
                     if st.button("Check My Final Inverse Result", key="check_manual_inv_result", type="primary"):
