@@ -1,28 +1,10 @@
-# 9th try to implement solution by inverse method (Gauss-Elimination)
+# 10th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
 from fractions import Fraction
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-
-def render():
-  """Renders the Unit 1 Systems of Linear Equations module."""
-  st.title("Unit 1: Systems of Linear Equations")
-  st.write(
-      "Welcome to the interactive workspace for systems of linear equations!"
-  )
-
-  # Add your specific module content, UI components, and logic here
-  st.subheader("Interactive Workspace")
-  st.info(
-      "This module is currently active and ready for your implementation."
-  )
-
-
-# Ensure the module can be loaded correctly by the main app
-if __name__ == "__main__":
-  render()
 
 # Optional PDF generator support
 try:
@@ -1109,6 +1091,7 @@ def render():
                                             break
                                 if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
                                     curr_aug[i] = curr_aug[i] / pivot
+                                    # FIXED ESCAPED BRACES BELOW:
                                     st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}$)")
                                     st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                     step_num += 1
@@ -1249,3 +1232,7 @@ def render():
                             st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
                     except Exception as err:
                         st.error(f"Error parsing your matrix input: {err}")
+
+# Ensure the module can be loaded correctly by the main app
+if __name__ == "__main__":
+  render()
