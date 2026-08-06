@@ -1,3 +1,4 @@
+# Trying to have stabilize manual inverse Matrix 
 import streamlit as st
 import numpy as np
 
@@ -25,7 +26,6 @@ def perform_row_operation(mat, op_str):
     m = mat.copy()
     op_clean = op_str.replace(" ", "").upper()
     
-    # Example: R1<->R2
     if "<->" in op_clean:
         parts = op_clean.split("<->")
         r1 = int(parts[0].replace("R", "")) - 1
@@ -33,12 +33,10 @@ def perform_row_operation(mat, op_str):
         m[[r1, r2]] = m[[r2, r1]]
         return m
         
-    # Example: R1->3*R1 or R2->R2-2*R1
     elif "->" in op_clean:
         lhs, rhs = op_clean.split("->")
         target_row = int(lhs.replace("R", "")) - 1
         
-        # Simple scalar multiplication: R1->3*R1 or R1->-R1
         if "*" in rhs and "+" not in rhs and "-" not in rhs:
             parts = rhs.split("*")
             factor = float(parts[0]) if parts[0] != "-" else -1.0
@@ -48,12 +46,7 @@ def perform_row_operation(mat, op_str):
             m[target_row] = factor * m[src_row]
             return m
             
-        # Row addition/subtraction combination: R2->R2-2*R1
-        # We can safely evaluate standard algebraic row expressions
-        # Let's write a robust parser for standard formats like R2-2*R1 or R2+R1
         import re
-        # Evaluate using custom line combination parsing
-        # For safety/simplicity in standard formats: target = target ± scalar * source
         match = re.match(r"R(\d+)([\+\-])([\d\.]*)\*?R(\d+)", rhs)
         if match:
             sign = match.group(2)
@@ -85,14 +78,12 @@ def render():
     if selected_tab == "System of Linear Equations":
         st.markdown("#### System of Linear Equations Workspace")
         st.info("Explore solutions to linear systems using Gaussian Elimination and Gauss-Jordan methods.")
-        # Placeholder for other tabs if needed
 
-    # --- TAB 2: INVERSE OF A MATRIX ---
     elif selected_tab == "Inverse of a Matrix":
         st.markdown("#### Inverse of a Matrix Workspace")
         st.markdown("Find the inverse of a matrix using different methods and explore automated vs. manual practice modes.")
         
-        c_ta1, c_ta2 = st.columns([1, 3])
+        c_ta1, c_ta2 = st.columns([1.5, 2.5])
         with c_ta1:
             st.markdown("**Enter Matrix A**\n*(Row-by-row, space separated rows)*:")
         with c_ta2:
@@ -113,7 +104,7 @@ def render():
             st.error(f"Invalid matrix format: {e}")
             A = np.array([[1.0, 0.0, 2.0], [0.0, 1.0, 0.0], [1.0, 0.0, 3.0]], dtype=float)
 
-        c_m_lbl, c_m_inp = st.columns([1, 3])
+        c_m_lbl, c_m_inp = st.columns([1.5, 2.5])
         with c_m_lbl:
             st.markdown("**Select Method:**")
         with c_m_inp:
@@ -124,7 +115,7 @@ def render():
                 label_visibility="collapsed"
             )
 
-        c_mod_lbl, c_mod_inp = st.columns([1, 3])
+        c_mod_lbl, c_mod_inp = st.columns([1.5, 2.5])
         with c_mod_lbl:
             st.markdown("**Select Mode:**")
         with c_mod_inp:
@@ -152,14 +143,13 @@ def render():
                     else:
                         if method_choice == "Adjoint Formula":
                             st.markdown(f"**1. Determinant of A:** $\\det(A) = {det_A:.4g}$")
-                            
                             n = A.shape[0]
                             if n == 2:
                                 adj = np.array([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]])
                                 st.markdown("**2. Adjoint Matrix:**")
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
-                                st.markdown("**3. Inverse Matrix ($A^{-1} = \\frac{1}{\\det(A)} \\text{{adj}}(A)$):**")
+                                st.markdown("**3. Inverse Matrix:**")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                             else:
                                 cofactors = np.zeros((n, n))
@@ -168,13 +158,13 @@ def render():
                                         submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
                                         cofactors[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
                                 adj = cofactors.T
-                                st.markdown("**2. Adjoint Matrix (Transpose of Cofactor Matrix):**")
+                                st.markdown("**2. Adjoint Matrix:**")
                                 st.latex(f"\\text{{adj}}(A) = {format_matrix_latex(adj)}")
                                 inv_A = adj / det_A
                                 st.markdown("**3. Inverse Matrix:**")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(inv_A)}")
                                 
-                        else:  # Gauss-Jordan Elimination
+                        else:
                             st.markdown("Using Gauss-Jordan Elimination on $[A \\mid I]$ to reduce to $[I \\mid A^{-1}]$:")
                             n = A.shape[0]
                             identity = np.eye(n)
@@ -198,7 +188,7 @@ def render():
                                             break
                                 if not np.isclose(pivot, 0) and not np.isclose(pivot, 1):
                                     curr_aug[i] = curr_aug[i] / pivot
-                                    st.markdown(f"Step {step_num}: Normalize Row {i+1} ($R_{{{i+1}}} \\to \\frac{{1}}{{{pivot:.2g}}} R_{{{i+1}}}$)")
+                                    st.markdown(f"Step {step_num}: Normalize Row {i+1}")
                                     st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                     step_num += 1
                                 
@@ -206,7 +196,7 @@ def render():
                                     if j != i and not np.isclose(curr_aug[j, i], 0):
                                         factor = curr_aug[j, i]
                                         curr_aug[j] = curr_aug[j] - factor * curr_aug[i]
-                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1} ($R_{{{j+1}}} \\to R_{{{j+1}}} - ({factor:.2g})R_{{{i+1}}}$)")
+                                        st.markdown(f"Step {step_num}: Eliminate Row {j+1}")
                                         st.latex(f"\\sim {format_augmented_matrix_latex(curr_aug, n_div=n)}")
                                         step_num += 1
                                         
@@ -264,7 +254,12 @@ def render():
 
                     st.markdown("##### 🛠️ Apply Row Operation")
                     st.markdown("*Syntax:* `R1 <-> R2` | `R1 -> 3*R1` | `R2 -> R2 - 2*R1`")
-                    inv_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_op_input")
+                    
+                    c_op_lbl, c_op_inp = st.columns([1.5, 2.5])
+                    with c_op_lbl:
+                        st.markdown("**Enter Row Operation:**")
+                    with c_op_inp:
+                        inv_op_input = st.text_input("Enter Row Operation", placeholder="e.g., R3 -> R3 - R1", key="manual_inv_op_input", label_visibility="collapsed")
                     
                     mic1, mic2, mic3 = st.columns([1, 1, 2])
                     with mic1:
@@ -310,16 +305,14 @@ def render():
                                 st.success("🎉 Congratulations! You have successfully reduced the left block to Identity and correctly derived $A^{-1}$ on the right block!")
                                 st.latex(f"A^{{-1}} = {format_matrix_latex(current_right_block)}")
                             else:
-                                st.warning("⚠️ The right-hand block does not match the true inverse matrix yet. Keep performing row operations to achieve $[I \\mid A^{-1}]$!")
+                                st.warning("⚠️ The right-hand block does not match the true inverse matrix yet.")
                         except Exception as err:
                             st.error(f"Verification error: {err}")
                 else:
                     st.caption("Click the button above to load your matrix's augmented $[A \mid I]$ state into the manual practice workspace.")
             else:
-                st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
-                
-                user_ans_str = st.text_area("Enter your calculated inverse matrix values (row-by-row, comma or space separated):", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
-                
+                st.info("Perform the matrix inverse steps on your own scratchpad.")
+                user_ans_str = st.text_area("Enter your calculated inverse matrix values:", value="1 0 0\n0 1 0\n0 0 1", key="user_manual_inverse_input")
                 verify_clicked = st.button("Verify Result", key="verify_manual_inverse", type="primary")
 
                 if verify_clicked:
@@ -327,16 +320,13 @@ def render():
                         rows_ans = user_ans_str.strip().split("\n")
                         user_data = [[float(val) for val in r.replace(',', ' ').split()] for r in rows_ans if r.strip()]
                         User_Inv = np.array(user_data, dtype=float)
-                        
                         actual_inv = np.linalg.inv(A)
                         
                         if User_Inv.shape == actual_inv.shape and np.allclose(User_Inv, actual_inv, atol=1e-2):
                             st.success("🎉 Excellent! Your calculated inverse matrix is correct.")
                             st.latex(f"\\text{{Your Answer}} = {format_matrix_latex(User_Inv)}")
                         else:
-                            st.error("❌ Your matrix does not match the correct inverse. Please review your steps and try again.")
-                            st.markdown("**Expected Correct Inverse for comparison:**")
-                            st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
+                            st.error("❌ Your matrix does not match the correct inverse.")
                     except Exception as err:
                         st.error(f"Error parsing your matrix input: {err}")
 
