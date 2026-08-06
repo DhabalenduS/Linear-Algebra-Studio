@@ -968,10 +968,9 @@ def render():
 
                 c_pload1, c_pload2 = st.columns(2)
                 with c_pload1:
-                    load_manual_btn = st.button("Load Matrix Into Manual Inverse Workspace", type="primary", key="load_manual_inv")
+                    load_manual_btn = st.button("Load Matrix Into Manual Inverse Workspace", type="primary", key="load_manual_inv", use_container_width=True)
                 with c_pload2:
-                    reset_manual_btn = st.button("Reset Manual Inverse Workspace", key="reset_manual_inv")
-
+                    reset_manual_btn = st.button("Reset Manual Inverse Workspace", key="reset_manual_inv", use_container_width=True)
                 if load_manual_btn:
                     if A.shape[0] != A.shape[1]:
                         st.error("Matrix must be square to find an inverse.")
@@ -1007,9 +1006,9 @@ def render():
                     
                     mic1, mic2 = st.columns(2)
                     with mic1:
-                        inv_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_exec")
+                        inv_apply_btn = st.button("Execute Step", type="primary", key="manual_inv_exec", use_container_width=True)
                     with mic2:
-                        inv_undo_btn = st.button("Undo Last Step", key="manual_inv_undo")
+                        inv_undo_btn = st.button("Undo Last Step", key="manual_inv_undo", use_container_width=True)
                         
                     if inv_apply_btn and inv_op_input:
                         try:
