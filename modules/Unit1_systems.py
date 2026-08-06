@@ -1,4 +1,5 @@
-# 1st try to display all calculations incuding cofactors in automated Adjoint Method
+# In the previous committed,we have stable for displaying  all calculations incuding cofactors in automated Adjoint Method
+# 1st Try to improve Manual Adjoint Method for inverse
 import streamlit as st
 import numpy as np
 import re
@@ -1313,6 +1314,111 @@ def render():
                             st.error(f"Verification error: {err}")
                 else:
                     st.caption("Click the button above to load your matrix's augmented $[A \mid I]$ state into the manual practice workspace.")
+            
+            elif method_choice == "Adjoint Formula":
+                st.markdown("##### Structured Milestone Practice Mode (Adjoint Formula)")
+                st.info("Progress through the milestones below to verify your calculations for Determinant, Cofactor Matrix, and Final Inverse Matrix step-by-step.")
+
+                if "adj_det_verified" not in st.session_state:
+                    st.session_state.adj_det_verified = False
+                if "adj_cofactor_verified" not in st.session_state:
+                    st.session_state.adj_cofactor_verified = False
+
+                st.markdown("**Target Matrix A:**")
+                st.latex(format_matrix_latex(A))
+
+                # Milestone 1: Determinant
+                st.markdown("---")
+                st.markdown("### Milestone 1: Compute $\\det(A)$")
+                user_det_input = st.number_input("Enter your calculated determinant value:", value=0, step=1, key="manual_adj_det_input")
+                
+                if st.button("Verify Determinant", key="verify_adj_det_btn"):
+                    try:
+                        actual_det_val = int(np.round(np.linalg.det(A)))
+                        if int(user_det_input) == actual_det_val:
+                            st.success(f"Correct! $\\det(A) = {actual_det_val}$ is accurate.")
+                            st.session_state.adj_det_verified = True
+                        else:
+                            st.error("Incorrect determinant value. Please re-verify your expansion.")
+                    except Exception as e:
+                        st.error(f"Error checking determinant: {e}")
+
+                # Milestone 2: Cofactor Matrix
+                if st.session_state.adj_det_verified:
+                    st.markdown("---")
+                    st.markdown("### Milestone 2: Enter Cofactor Matrix $C$ (Row by Row)")
+                    st.markdown("Provide comma or space-separated values for each row of the cofactor matrix $C$:")
+
+                    n_dim = A.shape[0]
+                    default_rows_hint = []
+                    for ri in range(n_dim):
+                        default_rows_hint.append(" ".join(["0"] * n_dim))
+
+                    c_row_inputs = []
+                    for ri in range(n_dim):
+                        r_val = st.text_input(f"Cofactor Row {ri+1}", value=default_rows_hint[ri], key=f"manual_adj_c_row_{ri}")
+                        c_row_inputs.append(r_val)
+
+                    if st.button("Verify Cofactor Matrix", key="verify_adj_c_btn"):
+                        try:
+                            user_c_list = []
+                            for r_str in c_row_inputs:
+                                row_nums = [float(x.strip()) for x in r_str.replace(',', ' ').split() if x.strip()]
+                                user_c_list.append(row_nums)
+                            user_C_mat = np.array(user_c_list, dtype=float)
+
+                            # Calculate actual cofactor matrix
+                            actual_C = np.zeros((n_dim, n_dim), dtype=float)
+                            for i in range(n_dim):
+                                for j in range(n_dim):
+                                    submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                    actual_C[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
+
+                            if user_C_mat.shape == actual_C.shape and np.allclose(user_C_mat, actual_C, atol=1e-2):
+                                st.success("Fantastic! Your cofactor matrix elements match perfectly.")
+                                st.session_state.adj_cofactor_verified = True
+                            else:
+                                st.error("Some cofactor entries are incorrect. Double-check your minors and alternating signs ($(-1)^{i+j}$).")
+                        except Exception as err:
+                            st.error(f"Error parsing cofactor matrix input: {err}")
+
+                # Milestone 3: Final Inverse Matrix
+                if st.session_state.adj_cofactor_verified:
+                    st.markdown("---")
+                    st.markdown("### Milestone 3: Final Inverse Matrix Verification ($A^{-1}$)")
+                    st.markdown("Enter your final calculated inverse matrix row-by-row (fractions or decimals allowed):")
+
+                    inv_row_inputs = []
+                    for ri in range(n_dim):
+                        inv_r_val = st.text_input(f"Inverse Row {ri+1}", value=default_rows_hint[ri], key=f"manual_adj_inv_row_{ri}")
+                        inv_row_inputs.append(inv_r_val)
+
+                    if st.button("Verify My Inverse Matrix", key="verify_adj_final_inv_btn"):
+                        try:
+                            user_inv_list = []
+                            for r_str in inv_row_inputs:
+                                row_nums = [float(Fraction(x.strip())) for x in r_str.replace(',', ' ').split() if x.strip()]
+                                user_inv_list.append(row_nums)
+                            user_Inv_mat = np.array(user_inv_list, dtype=float)
+
+                            det_A = np.linalg.det(A)
+                            actual_C = np.zeros((n_dim, n_dim), dtype=float)
+                            for i in range(n_dim):
+                                for j in range(n_dim):
+                                    submat = np.delete(np.delete(A, i, axis=0), j, axis=1)
+                                    actual_C[i, j] = ((-1)**(i + j)) * np.linalg.det(submat)
+                            actual_inv = actual_C.T / det_A
+
+                            if user_Inv_mat.shape == actual_inv.shape and np.allclose(user_Inv_mat, actual_inv, atol=1e-2):
+                                st.success("🎉 Outstanding work! You have successfully completed the Adjoint Formula manual practice workflow correctly!")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(user_Inv_mat)}")
+                            else:
+                                st.error("❌ The final inverse matrix values are incorrect. Verify your transposition (adjugate) and scaling by $1/\\det(A)$.")
+                                st.markdown("**Expected Correct Inverse Matrix:**")
+                                st.latex(f"A^{{-1}} = {format_matrix_latex(actual_inv)}")
+                        except Exception as err:
+                            st.error(f"Error parsing inverse matrix entries: {err}")
+
             else:
                 st.info("Perform the matrix inverse steps on your own scratchpad. You can use the verification block below to check your final calculated inverse matrix values.")
                 
