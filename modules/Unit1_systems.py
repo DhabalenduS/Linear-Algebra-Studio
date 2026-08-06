@@ -1,4 +1,4 @@
-# 6th try to implement solution by inverse method (Gauss-Elimination)
+# 7th try to implement solution by inverse method (Gauss-Elimination)
 import streamlit as st
 import numpy as np
 import re
